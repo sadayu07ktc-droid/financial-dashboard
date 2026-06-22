@@ -296,7 +296,7 @@ reindex(); buildFull();
 
 /* ===== Google Sheet (CSV) — ทางที่ 2 =====
    วาง URL จาก Google Sheets > File > Share > Publish to web > เลือก CSV ตรงนี้
-   เช่น 'https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=0&single=true&output=csv'
+   เช่น 'https://docs.google.com/spreadsheets/d/16ffJi3PRcgrYiShjVmP8P82mpTZSV9yxG3_lA0uK-vU/edit?usp=sharing'
    เว้นว่าง = ใช้ข้อมูลที่ฝังในไฟล์ (เปิดแบบ offline ได้) */
 const SHEET_CSV_URL='';
 const TH={reg:'เลขนิติบุคคล',name:'ชื่อ',year:'ปี',recv:'ลูกหนี้การค้าสุทธิ',inv:'สินค้าคงเหลือ',ca:'สินทรัพย์หมุนเวียน',ppe:'ที่ดิน อาคารและอุปกรณ์',nca:'สินทรัพย์ไม่หมุนเวียน',assets:'สินทรัพย์รวม',cl:'หนี้สินหมุนเวียน',ncl:'หนี้สินไม่หมุนเวียน',liab:'หนี้สินรวม',eq:'ส่วนของผู้ถือหุ้น',mainRev:'รายได้หลัก',rev:'รายได้รวม',cogs:'ต้นทุนขาย',gp:'กำไร(ขาดทุน) ขั้นต้น',sga:'ค่าใช้จ่ายในการขายและบริหาร',exp:'รายจ่ายรวม',int:'ดอกเบี้ยจ่าย',pre:'กำไร(ขาดทุน) ก่อนภาษี',tax:'ภาษีเงินได้',np:'กำไร(ขาดทุน) สุทธิ',r9:'9. อัตราการหมุนเวียนของเจ้าหนี้ (เท่า)'};
