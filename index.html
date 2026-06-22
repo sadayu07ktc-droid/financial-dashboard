@@ -36,7 +36,7 @@ body{
 .yr b{color:var(--acc);font-family:'Space Grotesk'}
 
 /* layout */
-.grid{display:grid;grid-template-columns:288px minmax(0,1fr);gap:20px;align-items:start}
+.grid{display:grid;grid-template-columns:246px minmax(0,1fr);gap:20px;align-items:start}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 
 .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
@@ -88,21 +88,12 @@ body{
 .expbtn{background:var(--card2);border:1px solid var(--line2);color:var(--tx2);border-radius:10px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .expbtn:hover{border-color:var(--acc);color:var(--acc)}
 .modal-card.big{width:min(1480px,97vw);height:min(900px,94vh)}
-.block-body{overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
-.block-body::-webkit-scrollbar{display:none}
-/* จอขยายตารางเปรียบเทียบ: พอดีความกว้าง ไม่ต้องเลื่อนแนวนอน */
-.block-body .cmpwrap{min-width:0;overflow:visible}
-.block-body table.cmp{width:100%;min-width:0;table-layout:fixed;font-size:12px}
-.block-body table.cmp th,.block-body table.cmp td{white-space:normal;padding:9px 8px;word-break:break-word}
-.block-body table.cmp th:first-child,.block-body table.cmp td:first-child{width:21%}
-.block-body .colhd1.v,.block-body .colhd2,.block-body .colhd1{width:100%}
-.block-body table.cmp .val{white-space:nowrap;font-size:12px}
-.block-body table.cmp .best{padding:3px 7px}
-.modal-hint{margin-left:auto;margin-right:10px;font-size:11.5px;color:var(--tx3);white-space:nowrap}
-@media(max-width:600px){.modal-hint{display:none}}
-.block-inner{min-width:max-content}
+.block-body{overflow:auto}
 .block-body .cmpwrap{overflow:visible}
 .block-body table.cmp{font-size:13.5px}
+.block-inner{min-width:max-content}
+.modal-hint{margin-left:auto;margin-right:10px;font-size:11.5px;color:var(--tx3);white-space:nowrap}
+@media(max-width:600px){.modal-hint{display:none}}
 .block-body .rkname{width:220px}
 .grabx{cursor:grab}
 .grabx.dragging-x{cursor:grabbing;user-select:none}
@@ -165,11 +156,13 @@ table.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}
 table.cmp th,table.cmp td{padding:11px 13px;text-align:right;white-space:nowrap}
 table.cmp thead th{position:sticky;top:0;z-index:2;background:var(--card);font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
 .block-body table.cmp thead th{background:var(--card)}
-table.cmp thead th:first-child{text-align:left;z-index:3}
-table.cmp td:first-child,table.cmp th:first-child{text-align:left;color:var(--tx2);font-weight:400}
+table.cmp thead th:first-child{text-align:left;left:0;z-index:5}
+table.cmp td:first-child,table.cmp th:first-child{text-align:left;color:var(--tx2);font-weight:400;position:sticky;left:0;background:var(--card)}
+table.cmp tbody td:first-child{z-index:3}
+table.cmp tbody tr:hover td:first-child{background:var(--card2)}
 table.cmp tbody tr{border-bottom:1px solid var(--line)}
 table.cmp tbody tr:hover{background:rgba(255,255,255,.02)}
-table.cmp tbody tr.catrow td,table.cmp tbody tr.catrow:hover td{background:var(--bg2);text-align:left;font-weight:600;font-size:11.5px;color:var(--tx);letter-spacing:.2px;padding:9px 13px;border-bottom:1px solid var(--line2)}
+table.cmp tbody tr.catrow td,table.cmp tbody tr.catrow:hover td{background:var(--bg2);text-align:left;font-weight:600;font-size:11.5px;color:var(--tx);letter-spacing:.2px;padding:9px 13px;border-bottom:1px solid var(--line2);position:sticky;left:0;z-index:3}
 .catdot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:8px;vertical-align:middle}
 .val{font-family:'Space Grotesk';font-weight:600}
 .best{color:#06121f;background:var(--acc);border-radius:8px;padding:3px 9px;display:inline-block}
@@ -325,7 +318,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
       <div class="logo">฿</div>
       <div>
         <h1>เปรียบเทียบงบการเงิน</h1>
-        <p>รวมทั้งหมด · <span id="coCount">–</span> บริษัท กลุ่ม โรงปาล์ม/โรงพืช</p>
+        <p>ลากการ์ดบริษัทมาวางเพื่อเทียบ · <span id="coCount">–</span> บริษัท กลุ่มน้ำมันพืช/ปาล์ม</p>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -660,7 +653,7 @@ function rebuildPool(){
   el.className='chip'; el.draggable=true; el.dataset.id=c.id; el.dataset.name=c.name;
   const on=stars.includes(c.id);
   el.innerHTML=`${companySwatch(c)}
-    <div><div class="cn">${c.name}</div><div class="cm">฿${fmt(c.rev/1e6,0)} ลบ.</div>${brandTagsHTML(c)}</div>
+    <div><div class="cn">${c.name}</div>${brandTagsHTML(c)}</div>
     <div class="grip">⠿</div>
     <button class="star-btn ${on?'on':''}" data-id="${c.id}" title="ติดดาว">${on?'★':'☆'}</button>`;
   el.addEventListener('dragstart',e=>{e.dataTransfer.setData('id',c.id);el.classList.add('dragging')});
