@@ -196,8 +196,53 @@ select.sel:focus{border-color:var(--acc)}
 .yclr{background:transparent;border:1px solid var(--line);color:var(--tx3);border-radius:8px;padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:inherit}
 .yclr:hover{border-color:var(--bad);color:var(--bad)}
 .colhd .yrtag{font-family:'Space Grotesk';font-size:10.5px;color:var(--tx3);background:var(--bg2);padding:1px 6px;border-radius:5px;margin-left:5px}
+/* tabs */
+.tabbar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--tx2);border-radius:12px;padding:11px 20px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:.15s}
+.tab:hover{border-color:var(--line2);color:var(--tx);transform:translateY(-1px)}
+.tab.active{background:var(--card2);border-color:var(--acc);color:var(--acc)}
+.tabpanel{display:none}
+.tabpanel.active{display:block;animation:pop .25s}
+.stmt-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stmt-head .sel{max-width:340px}
+.stmt-pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.combo{position:relative}
+.combo-in{background:var(--card2);border:1px solid var(--line2);color:var(--tx);border-radius:10px;padding:9px 13px;font-size:13px;font-family:inherit;outline:none;width:248px;transition:.15s}
+.combo-in:focus{border-color:var(--acc)}
+.combo-in::placeholder{color:var(--tx3)}
+.combo-list{position:absolute;top:calc(100% + 5px);left:0;right:0;min-width:248px;background:var(--card);border:1px solid var(--line2);border-radius:11px;max-height:280px;overflow-y:auto;z-index:30;display:none;box-shadow:0 18px 44px rgba(0,0,0,.5)}
+.combo-list.show{display:block}
+.combo-list::-webkit-scrollbar{width:8px}.combo-list::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+.combo-opt{padding:9px 13px;font-size:12.5px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;gap:9px}
+.combo-opt:hover{background:var(--card2);color:var(--tx)}
+.combo-opt .sd{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.combo-none{padding:13px;text-align:center;color:var(--tx3);font-size:12px}
+.stmt-cos{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:8px}
+.stmt-empty{color:var(--tx3);font-size:12.5px}
+.conm2{display:inline-flex;align-items:center;gap:6px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.conm2 .sd{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+table.stmt.stmt-multi thead tr:last-child th{text-align:right}
+table.stmt.stmt-multi thead tr:last-child th .conm2{justify-content:flex-end}
+.stmtwrap{overflow-x:auto;border-radius:var(--r);background:var(--card);border:1px solid var(--line);padding:6px}
+table.stmt{width:100%;border-collapse:collapse;font-size:12.5px;min-width:680px}
+table.stmt th,table.stmt td{padding:10px 13px;white-space:nowrap;text-align:right}
+table.stmt thead th{font-size:11.5px;font-weight:600;color:var(--tx);text-align:center;border-bottom:1px solid var(--line2)}
+table.stmt thead tr.yhd th{background:var(--bg2);font-family:'Space Grotesk';font-size:13px;padding:9px 13px}
+table.stmt th.lbl,table.stmt td.lbl{text-align:left;position:sticky;left:0;background:var(--card);z-index:3}
+table.stmt thead th.lbl{color:var(--tx);background:var(--bg2);z-index:5;box-shadow:1px 0 0 var(--line2)}
+table.stmt tbody td.lbl{color:var(--tx2);font-weight:400;background:var(--card);box-shadow:1px 0 0 var(--line)}
+table.stmt tbody tr{border-bottom:1px solid var(--line)}
+table.stmt tbody tr:hover td{background:rgba(255,255,255,.025)}
+table.stmt tbody tr:hover td.lbl{background:var(--card2)}
+table.stmt tbody tr.sumrow td{font-weight:600;color:var(--tx);background:rgba(94,231,194,.05)}
+table.stmt tbody tr.sumrow td.lbl{background:#1a2740;color:var(--tx)}
+table.stmt tbody tr:hover td.lbl{background:var(--card2)}
+.stmt .amt{font-family:'Space Grotesk';font-weight:600;color:var(--tx)}
+.stmt .pc{font-family:'Space Grotesk';font-size:11px}
+.stmt .pc.up{color:var(--acc)} .stmt .pc.down{color:var(--bad)} .stmt .pc.flat{color:var(--tx3)}
+.stmt .yrcol{border-left:1px solid var(--line2)}
 .colhd2{display:flex;flex-direction:column;align-items:center;gap:5px;width:120px;text-align:center}
-.colhd2 .yrbig{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#06121f;border-radius:8px;padding:3px 16px;letter-spacing:.5px;line-height:1.25;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.yrbig{display:inline-block;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#06121f;border-radius:8px;padding:3px 16px;letter-spacing:.5px;line-height:1.25;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .colhd2 .conm{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;font-size:11px;color:var(--tx2);font-weight:500}
 .colhd2 .conm .sd{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 .colhd1{display:flex;align-items:center;gap:7px;width:132px}
@@ -236,6 +281,13 @@ select.sel:focus{border-color:var(--acc)}
     </div>
   </div>
 
+  <div class="tabbar" id="tabbar">
+    <button class="tab active" data-tab="main">ภาพรวม &amp; เปรียบเทียบ</button>
+    <button class="tab" data-tab="bs">งบแสดงฐานะการเงิน</button>
+    <button class="tab" data-tab="pl">งบกำไรขาดทุน</button>
+  </div>
+
+  <div id="tab-main" class="tabpanel active">
   <div class="grid">
     <!-- left: company pool -->
     <div class="panel">
@@ -308,6 +360,39 @@ select.sel:focus{border-color:var(--acc)}
       <div class="donutbox"><canvas id="chFund"></canvas><div class="dcenter" id="dcB"></div></div>
       <div class="dlegend" id="legB"></div>
     </div>
+  </div>
+  </div><!-- /#tab-main -->
+
+  <div id="tab-bs" class="tabpanel">
+    <div class="stmt-head">
+      <div class="ptitle" style="margin:0"><span class="dot"></span>งบแสดงฐานะการเงิน (หน่วย: บาท)</div>
+      <div class="stmt-pick">
+        <div class="combo">
+          <input type="text" class="combo-in" id="stmtSearchBS" placeholder="+ เพิ่มบริษัท (พิมพ์ค้นหา)..." autocomplete="off">
+          <div class="combo-list" id="stmtListBS"></div>
+        </div>
+        <button class="clr" id="stmtClrBS">ล้าง</button>
+      </div>
+    </div>
+    <div class="stmt-cos" id="stmtCosBS"></div>
+    <div class="stmtwrap" id="stmtBS"></div>
+    <div class="hint" style="margin-top:12px"><span>●</span><span>เลือกบริษัทมุมขวา · ลากชิปปีด้านบนมาช่อง “ปีที่นำมาเทียบ” เพื่อดูเฉพาะบางปี · %เปลี่ยนแปลงเทียบปีก่อนหน้า (เขียว=เพิ่ม แดง=ลด)</span></div>
+  </div>
+
+  <div id="tab-pl" class="tabpanel">
+    <div class="stmt-head">
+      <div class="ptitle" style="margin:0"><span class="dot"></span>งบกำไรขาดทุน (หน่วย: บาท)</div>
+      <div class="stmt-pick">
+        <div class="combo">
+          <input type="text" class="combo-in" id="stmtSearchPL" placeholder="+ เพิ่มบริษัท (พิมพ์ค้นหา)..." autocomplete="off">
+          <div class="combo-list" id="stmtListPL"></div>
+        </div>
+        <button class="clr" id="stmtClrPL">ล้าง</button>
+      </div>
+    </div>
+    <div class="stmt-cos" id="stmtCosPL"></div>
+    <div class="stmtwrap" id="stmtPL"></div>
+    <div class="hint" style="margin-top:12px"><span>●</span><span>เลือกบริษัทมุมขวา · ลากชิปปีด้านบนมาช่อง “ปีที่นำมาเทียบ” เพื่อดูเฉพาะบางปี · %เปลี่ยนแปลงเทียบปีก่อนหน้า (เขียว=เพิ่ม แดง=ลด)</span></div>
   </div>
 
 </div>
@@ -845,7 +930,7 @@ function renderYearChips(){
   yearChips.innerHTML='';
   const allc=document.createElement('div');
   allc.className='ychip all'; allc.textContent='ทั้งหมด'; allc.title='ใส่ทุกปีลงช่องเทียบ';
-  allc.addEventListener('click',()=>{cmpYears=[...YEARS].sort();renderYearDZ();renderCmp();renderCharts();});
+  allc.addEventListener('click',()=>{cmpYears=[...YEARS].sort();renderYearDZ();renderCmp();renderCharts();renderStatements();});
   yearChips.appendChild(allc);
   YEARS.forEach(y=>{
     const el=document.createElement('div');
@@ -863,14 +948,14 @@ yearDZ.addEventListener('dragover',e=>{e.preventDefault();yearDZ.classList.add('
 yearDZ.addEventListener('dragleave',()=>yearDZ.classList.remove('over'));
 yearDZ.addEventListener('drop',e=>{e.preventDefault();yearDZ.classList.remove('over');
   const y=e.dataTransfer.getData('year');
-  if(y&&YEARS.includes(y)&&!cmpYears.includes(y)){cmpYears.push(y);cmpYears.sort();renderYearDZ();renderCmp();renderCharts();}
+  if(y&&YEARS.includes(y)&&!cmpYears.includes(y)){cmpYears.push(y);cmpYears.sort();renderYearDZ();renderCmp();renderCharts();renderStatements();}
 });
 function renderYearDZ(){
   if(!cmpYears.length){yearDZ.innerHTML='<span class="ydz-tx">ลากชิปปีมาวางที่นี่</span>';return;}
   yearDZ.innerHTML=cmpYears.map(y=>`<span class="ypill">${y}<span class="yx" data-y="${y}">×</span></span>`).join('')
     +'<button class="yclr" id="yclr">ล้างปี</button>';
-  yearDZ.querySelectorAll('.yx').forEach(x=>x.onclick=()=>{cmpYears=cmpYears.filter(v=>v!==x.dataset.y);renderYearDZ();renderCmp();renderCharts();});
-  const c=yearDZ.querySelector('#yclr'); if(c)c.onclick=()=>{cmpYears=[];renderYearDZ();renderCmp();renderCharts();};
+  yearDZ.querySelectorAll('.yx').forEach(x=>x.onclick=()=>{cmpYears=cmpYears.filter(v=>v!==x.dataset.y);renderYearDZ();renderCmp();renderCharts();renderStatements();});
+  const c=yearDZ.querySelector('#yclr'); if(c)c.onclick=()=>{cmpYears=[];renderYearDZ();renderCmp();renderCharts();renderStatements();};
 }
 function fillYearSel(){ cmpYears=cmpYears.filter(y=>YEARS.includes(y)); renderYearChips(); renderYearDZ(); }
 fillYearSel();
@@ -894,6 +979,7 @@ async function loadSheet(){
     if(donutB&&!FULL.some(c=>c.id===donutB))donutB=FULL[0]?FULL[0].id:null;
     rebuildPool(); doSearch();
     render(); renderRank(); drawAsset(); drawFund();
+    renderStmtPickers(); renderStatements();
     setBadge('sheet');
   }catch(e){console.error('Sheet load failed:',e); setBadge('error');}
 }
@@ -906,6 +992,129 @@ function setYear(){
   render(); renderRank(); drawAsset(); drawFund();
 }
 
+/* ===== แท็บ + งบการเงิน (งบแสดงฐานะการเงิน / งบกำไรขาดทุน) ต่อบริษัท ทุกปี ===== */
+const STMT_BS=[
+ {l:'ลูกหนี้การค้าสุทธิ',k:'recv'},
+ {l:'สินค้าคงเหลือ',k:'inv'},
+ {l:'สินทรัพย์หมุนเวียน',k:'ca'},
+ {l:'ที่ดิน อาคารและอุปกรณ์',k:'ppe'},
+ {l:'สินทรัพย์ไม่หมุนเวียน',k:'nca'},
+ {l:'สินทรัพย์รวม',k:'assets',sum:true},
+ {l:'หนี้สินหมุนเวียน',k:'cl'},
+ {l:'หนี้สินไม่หมุนเวียน',k:'ncl'},
+ {l:'หนี้สินรวม',k:'liab',sum:true},
+ {l:'ส่วนของผู้ถือหุ้น',k:'eq'},
+ {l:'หนี้สินรวมและส่วนของผู้ถือหุ้น',f:r=>r.liab+r.eq,sum:true},
+];
+const STMT_PL=[
+ {l:'รายได้หลัก',k:'mainRev'},
+ {l:'รายได้รวม',k:'rev',sum:true},
+ {l:'ต้นทุนขาย',k:'cogs'},
+ {l:'กำไร(ขาดทุน) ขั้นต้น',k:'gp'},
+ {l:'ค่าใช้จ่ายในการขายและบริหาร',k:'sga'},
+ {l:'รายจ่ายรวม',k:'exp'},
+ {l:'ดอกเบี้ยจ่าย',k:'int'},
+ {l:'กำไร(ขาดทุน) ก่อนภาษี',k:'pre'},
+ {l:'ภาษีเงินได้',k:'tax'},
+ {l:'กำไร(ขาดทุน) สุทธิ',k:'np',sum:true},
+];
+let stmtCos=[];   // บริษัทที่เลือกเทียบในงบ (หลายบริษัทได้)
+const stmtVal=(row,rec)=>{ if(!rec)return null; const v=row.f?row.f(rec):rec[row.k]; return (typeof v==='number')?v:null; };
+function stmtCompanies(){
+  const seen={},list=[];
+  ALLDATA.forEach(r=>{ if(!seen[r.id]){seen[r.id]=1;list.push({id:r.id,name:r.name||r.id});} });
+  list.sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  return list;
+}
+function stmtAdd(id){ if(id&&!stmtCos.includes(id)){stmtCos.push(id);renderStmtPickers();renderStatements();} }
+function stmtRemove(id){ stmtCos=stmtCos.filter(x=>x!==id); renderStmtPickers(); renderStatements(); }
+function renderStmtPickers(){
+  const list=stmtCompanies();
+  stmtCos=stmtCos.filter(id=>list.some(c=>c.id===id));   // ตัดบริษัทที่ไม่มีในชุดข้อมูล
+  [['stmtCosBS','stmtClrBS'],['stmtCosPL','stmtClrPL']].forEach(([chipId,clrId])=>{
+    const chips=document.getElementById(chipId);
+    if(chips){
+      chips.innerHTML = stmtCos.length
+        ? stmtCos.map(id=>{const m=companyMeta(id);return `<div class="selchip"><span class="sd" style="background:${m.color}"></span>${m.name}<span class="sx" data-id="${id}">×</span></div>`;}).join('')
+        : '<span class="stmt-empty">ยังไม่ได้เลือกบริษัท — พิมพ์ค้นหาในช่อง “+ เพิ่มบริษัท” (เลือกได้หลายบริษัท)</span>';
+      chips.querySelectorAll('.sx').forEach(x=>x.onclick=()=>stmtRemove(x.dataset.id));
+    }
+    const clr=document.getElementById(clrId); if(clr)clr.onclick=()=>{stmtCos=[];renderStmtPickers();renderStatements();};
+  });
+}
+/* ช่องค้นหา + ดรอปดาวน์เพิ่มบริษัท */
+function renderComboList(inputId,listId){
+  const inp=document.getElementById(inputId), list=document.getElementById(listId); if(!inp||!list)return;
+  const q=(inp.value||'').trim().toLowerCase();
+  const opts=stmtCompanies().filter(c=>!stmtCos.includes(c.id)&&c.name.toLowerCase().includes(q));
+  list.innerHTML = opts.length
+    ? opts.slice(0,80).map(c=>{const m=companyMeta(c.id);return `<div class="combo-opt" data-id="${c.id}"><span class="sd" style="background:${m.color}"></span>${c.name}</div>`;}).join('')
+    : '<div class="combo-none">ไม่พบบริษัท หรือเพิ่มครบแล้ว</div>';
+  list.querySelectorAll('.combo-opt').forEach(o=>o.onclick=()=>{stmtAdd(o.dataset.id);inp.value='';list.classList.remove('show');});
+}
+function setupCombo(inputId,listId){
+  const inp=document.getElementById(inputId), list=document.getElementById(listId); if(!inp||!list)return;
+  const open=()=>{renderComboList(inputId,listId);list.classList.add('show');};
+  inp.addEventListener('focus',open);
+  inp.addEventListener('input',open);
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.combo')) document.querySelectorAll('.combo-list').forEach(l=>l.classList.remove('show')); });
+function stmtAmt(v){return (v==null||!isFinite(v))?'<span class="amt" style="opacity:.35">–</span>':`<span class="amt">${fmt(v,2)}</span>`;}
+function stmtChg(v,pv,stacked){
+  if(v==null||pv==null||!isFinite(v)||!isFinite(pv)||pv===0) return stacked?'':'<span class="pc flat">–</span>';
+  const chg=(v-pv)/Math.abs(pv)*100, cls=Math.abs(chg)<0.005?'flat':(chg>0?'up':'down'),
+        s=(chg>0?'+':'')+fmt(chg,stacked?1:2)+(stacked?'%':'');
+  return stacked?`<div class="pc ${cls}" style="font-size:10px;margin-top:2px">${s}</div>`:`<span class="pc ${cls}">${s}</span>`;
+}
+function renderStmt(rows,elId){
+  const el=document.getElementById(elId); if(!el)return;
+  const cos = stmtCos.length ? stmtCos : (FULL[0]?[FULL[0].id]:[]);
+  if(!cos.length){el.innerHTML='<div class="empty-note">ยังไม่มีข้อมูลบริษัท</div>';return;}
+  const yrs=(cmpYears.length?[...cmpYears]:[...YEARS]).sort();
+  const recAt=(id,y)=>ALLDATA.find(r=>r.id===id&&r.year===y)||null;
+  let h;
+  if(cos.length===1){   // ----- บริษัทเดียว: ฟอร์ม DBD (ปี × [จำนวนเงิน | %เปลี่ยนแปลง]) -----
+    const co=cos[0];
+    h='<table class="stmt"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
+    yrs.forEach((y,i)=>h+=`<th colspan="2"${i>0?' class="yrcol"':''}><span class="yrbig" style="background:${yearColor(y)}">${y}</span></th>`);
+    h+='</tr><tr>'; yrs.forEach((y,i)=>h+=`<th${i>0?' class="yrcol"':''}>จำนวนเงิน</th><th>%เปลี่ยนแปลง</th>`);
+    h+='</tr></thead><tbody>';
+    rows.forEach(row=>{
+      h+=`<tr${row.sum?' class="sumrow"':''}><td class="lbl">${row.l}</td>`;
+      yrs.forEach((y,i)=>{ const v=stmtVal(row,recAt(co,y)); const pv=i>0?stmtVal(row,recAt(co,yrs[i-1])):null;
+        h+=`<td class="${i>0?'yrcol':''}">${stmtAmt(v)}</td><td>${stmtChg(v,pv,false)}</td>`; });
+      h+='</tr>';
+    });
+  }else{   // ----- หลายบริษัท: กรุ๊ปตามปี · บริษัทยืนข้างกัน · จำนวนเงิน + %เปลี่ยนแปลงเล็กใต้ค่า -----
+    const metas=cos.map(companyMeta);
+    h='<table class="stmt stmt-multi"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
+    yrs.forEach((y,i)=>h+=`<th colspan="${metas.length}"${i>0?' class="yrcol"':''}><span class="yrbig" style="background:${yearColor(y)}">${y}</span></th>`);
+    h+='</tr><tr>';
+    yrs.forEach((y,yi)=>metas.forEach((m,ci)=>h+=`<th class="${ci===0&&yi>0?'yrcol':''}" title="${m.name}"><span class="conm2"><span class="sd" style="background:${m.color}"></span>${m.name}</span></th>`));
+    h+='</tr></thead><tbody>';
+    rows.forEach(row=>{
+      h+=`<tr${row.sum?' class="sumrow"':''}><td class="lbl">${row.l}</td>`;
+      yrs.forEach((y,yi)=>metas.forEach((m,ci)=>{ const v=stmtVal(row,recAt(m.id,y));
+        const pv=yi>0?stmtVal(row,recAt(m.id,yrs[yi-1])):null;
+        h+=`<td class="${ci===0&&yi>0?'yrcol':''}">${stmtAmt(v)}${stmtChg(v,pv,true)}</td>`; }));
+      h+='</tr>';
+    });
+  }
+  h+='</tbody></table>';
+  el.innerHTML=h;
+}
+function renderStatements(){ renderStmt(STMT_BS,'stmtBS'); renderStmt(STMT_PL,'stmtPL'); }
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tabpanel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const p=document.getElementById('tab-'+t.dataset.tab); if(p)p.classList.add('active');
+  if(t.dataset.tab!=='main'){ if(!stmtCos.length&&selected.length) stmtCos=[...selected]; renderStmtPickers(); renderStatements(); }
+}));
+
+stmtCos = selected.length ? [...selected] : (stmtCompanies()[0]?[stmtCompanies()[0].id]:[]);
+setupCombo('stmtSearchBS','stmtListBS'); setupCombo('stmtSearchPL','stmtListPL');
+renderStmtPickers(); renderStatements();
 render(); renderRank(); drawAsset(); drawFund();
 loadSheet();</script>
 </body>
