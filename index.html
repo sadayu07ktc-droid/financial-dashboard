@@ -196,10 +196,13 @@ select.sel:focus{border-color:var(--acc)}
 .yclr{background:transparent;border:1px solid var(--line);color:var(--tx3);border-radius:8px;padding:4px 10px;font-size:11.5px;cursor:pointer;font-family:inherit}
 .yclr:hover{border-color:var(--bad);color:var(--bad)}
 .colhd .yrtag{font-family:'Space Grotesk';font-size:10.5px;color:var(--tx3);background:var(--bg2);padding:1px 6px;border-radius:5px;margin-left:5px}
-.colhd2{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;text-align:center}
+.colhd2{display:flex;flex-direction:column;align-items:center;gap:5px;width:120px;text-align:center}
 .colhd2 .yrbig{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#06121f;border-radius:8px;padding:3px 16px;letter-spacing:.5px;line-height:1.25;box-shadow:0 3px 10px rgba(0,0,0,.25)}
-.colhd2 .conm{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);font-weight:500;white-space:nowrap}
+.colhd2 .conm{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;font-size:11px;color:var(--tx2);font-weight:500}
 .colhd2 .conm .sd{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.colhd1{display:flex;align-items:center;gap:7px;width:132px}
+.colhd1 .sd{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.cnm-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.22;word-break:break-word;min-width:0}
 .chg{font-family:'Space Grotesk',sans-serif;font-size:10.5px;font-weight:600;margin-top:3px;line-height:1;white-space:nowrap}
 .chg-up{color:var(--acc)}
 .chg-down{color:var(--bad)}
@@ -503,23 +506,37 @@ function renderCmp(){
   let html='<div class="cmpwrap"><table class="cmp"><thead><tr><th>อัตราส่วน</th>';
   cols.forEach(col=>{
     if(usingCmp){
-      html+=`<th><div class="colhd2"><span class="yrbig" style="background:${yearColor(col.y)}">${col.y}</span><span class="conm"><span class="sd" style="background:${col.meta.color}"></span>${col.meta.name}</span></div></th>`;
+      html+=`<th><div class="colhd2"><span class="yrbig" style="background:${yearColor(col.y)}">${col.y}</span><span class="conm"><span class="sd" style="background:${col.meta.color}"></span><span class="cnm-t">${col.meta.name}</span></span></div></th>`;
     }else{
-      html+=`<th><span class="colhd"><span class="sd" style="background:${col.meta.color}"></span>${col.meta.name}</span></th>`;
+      html+=`<th><div class="colhd1"><span class="sd" style="background:${col.meta.color}"></span><span class="cnm-t">${col.meta.name}</span></div></th>`;
     }
   });
   html+='</tr></thead><tbody>';
-  // ===== ส่วนแบ่งการตลาด (อิงรายได้หลัก) — คิดภายในแต่ละปี (รวมในปีเดียวกัน = 100%) =====
+  // ===== ส่วนแบ่งการตลาด (อิงรายได้หลัก) =====
+  // บริษัทเดียว = เทียบทั้งตลาด (ทุกบริษัทในปีนั้น = 100%) · หลายบริษัท = เทียบเฉพาะที่เลือกในแต่ละปี
   if(cols.length>1){
-    const yearTot={};                       // ผลรวมรายได้หลักของบริษัทที่เลือก แยกตามปี
-    cols.forEach(c=>{ if(c.rec) yearTot[c.y]=(yearTot[c.y]||0)+(c.rec.mainRev||0); });
-    const shares=cols.map(c=>{ const t=yearTot[c.y]||0; return (t>0&&c.rec)?c.rec.mainRev/t*100:null; });
-    const yearMax={};                        // ผู้นำส่วนแบ่งในแต่ละปี
-    cols.forEach((c,i)=>{ const v=shares[i]; if(v!=null&&(yearMax[c.y]==null||v>yearMax[c.y]))yearMax[c.y]=v; });
+    const single=selected.length===1;
+    let shares, denomNote, isHi;
+    if(single){
+      const mktTot={};
+      ALLDATA.forEach(r=>{ mktTot[r.year]=(mktTot[r.year]||0)+(r.mainRev||0); });
+      shares=cols.map(c=>{ const t=mktTot[c.y]||0; return (t>0&&c.rec)?c.rec.mainRev/t*100:null; });
+      const mx=Math.max(...shares.filter(v=>v!=null&&isFinite(v)));   // ปีที่ส่วนแบ่งสูงสุด
+      isHi=(v,i)=>v===mx;
+      denomNote='เทียบทั้งตลาด';
+    }else{
+      const yearTot={};
+      cols.forEach(c=>{ if(c.rec) yearTot[c.y]=(yearTot[c.y]||0)+(c.rec.mainRev||0); });
+      shares=cols.map(c=>{ const t=yearTot[c.y]||0; return (t>0&&c.rec)?c.rec.mainRev/t*100:null; });
+      const yearMax={};
+      cols.forEach((c,i)=>{ const v=shares[i]; if(v!=null&&(yearMax[c.y]==null||v>yearMax[c.y]))yearMax[c.y]=v; });
+      isHi=(v,i)=>v===yearMax[cols[i].y];
+      denomNote='เทียบเฉพาะที่เลือก';
+    }
     const note=usingCmp?' · ในแต่ละปี':'';
-    html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catdot" style="background:#22D3EE"></span>ส่วนแบ่งการตลาด (เทียบเฉพาะที่เลือก${note} · อิงรายได้หลัก)</td></tr>`;
+    html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catdot" style="background:#22D3EE"></span>ส่วนแบ่งการตลาด (${denomNote}${note} · อิงรายได้หลัก)</td></tr>`;
     html+=`<tr><td>ส่วนแบ่งตามรายได้หลัก %</td>`;
-    shares.forEach((v,i)=>{ html+= (v===null)?'<td><span class="val" style="opacity:.35">–</span></td>':`<td><span class="val ${v===yearMax[cols[i].y]?'best':''}">${fmt(v,1)}%</span></td>`; });
+    shares.forEach((v,i)=>{ html+= (v===null)?'<td><span class="val" style="opacity:.35">–</span></td>':`<td><span class="val ${isHi(v,i)?'best':''}">${fmt(v,1)}%</span></td>`; });
     html+='</tr>';
   }
   let lastCat=-1;
@@ -620,12 +637,12 @@ function renderCharts(){
   chCost=new Chart(document.getElementById('chCost'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'ต้นทุนขาย',data:cs.map(c=>c.cogs/c.rev*100),backgroundColor:'#F2618C',borderRadius:5,stack:'s'},
-      {label:'ค่าใช้จ่ายขาย&บริหาร',data:cs.map(c=>c.sga/c.rev*100),backgroundColor:'#F5B73D',borderRadius:5,stack:'s'},
-      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/c.rev*100),backgroundColor:'#5EE7C2',borderRadius:5,stack:'s'}]},
+      {label:'ต้นทุนขาย',data:cs.map(c=>c.cogs/c.rev*100),baht:cs.map(c=>c.cogs/1e6),backgroundColor:'#F2618C',borderRadius:5,stack:'s'},
+      {label:'ค่าใช้จ่ายขาย&บริหาร',data:cs.map(c=>c.sga/c.rev*100),baht:cs.map(c=>c.sga/1e6),backgroundColor:'#F5B73D',borderRadius:5,stack:'s'},
+      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/c.rev*100),baht:cs.map(c=>c.np/1e6),backgroundColor:'#5EE7C2',borderRadius:5,stack:'s'}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:12,font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y,1)+'%'}}},
+        tooltip:{callbacks:{label:c=>{const b=c.dataset.baht?c.dataset.baht[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,1)+'%'+(b!=null?' ('+fmt(b,0)+' ลบ.)':'');}}}},
       scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}}}
   });
 
@@ -633,15 +650,15 @@ function renderCharts(){
   chRPL=new Chart(document.getElementById('chRPL'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'รายจ่ายรวม',data:cs.map(c=>(c.exp+c.tax)/1e6),backgroundColor:'#F2618C',stack:'r',borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6}},
-      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/1e6),backgroundColor:'#5EE7C2',stack:'r',borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0}}]},
+      {label:'รายจ่ายรวม',data:cs.map(c=>(c.exp+c.tax)/1e6),pct:cs.map(c=>(c.exp+c.tax)/c.rev*100),backgroundColor:'#F2618C',stack:'r',borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6}},
+      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/1e6),pct:cs.map(c=>c.np/c.rev*100),backgroundColor:'#5EE7C2',stack:'r',borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0}}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:14,font:{size:11}}},
         tooltip:{callbacks:{
-          label:c=>c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.',
-          footer:items=>{const c=cs[items[0].dataIndex];return 'รายได้รวม: '+fmt(c.rev/1e6,0)+' ลบ. (ความสูงทั้งแท่ง)';}
+          label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');},
+          footer:items=>{const c=cs[items[0].dataIndex];return 'รายได้รวม: '+fmt(c.rev/1e6,0)+' ลบ.';}
         }}},
-      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>fmt(v,0)},title:{display:true,text:'ล้านบาท (ความสูงทั้งแท่ง = รายได้รวม)',font:{size:10},color:'#5E6B8A'}}}}
+      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>fmt(v,0)},title:{display:true,text:'ล้านบาท',font:{size:10},color:'#5E6B8A'}}}}
   });
 }
 
@@ -655,50 +672,53 @@ function renderChartsCmp(){
   const labels=yrs;
   const legbase={position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:multi?9:13,font:{size:multi?9.5:11}}};
 
-  // ----- รายได้รวม vs กำไรสุทธิ : แท่ง + เส้นแนวโน้มรายได้แบบสมูท -----
+  // ----- รายได้รวม vs กำไรสุทธิ : แท่งกรุ๊ปตามปี (+ เส้นแนวโน้มสมูทเฉพาะบริษัทเดียว) -----
   const revDS=[];
   comps.forEach(m=>{
     const rev=yrs.map(y=>{const r=recOf(m.id,y);return r?r.rev/1e6:null;});
     const np =yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;});
+    const npPct=yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;});
     const pre=multi?m.name+' · ':'';
     revDS.push({type:'bar',label:pre+'รายได้รวม',data:rev,backgroundColor:multi?m.color:'#3B82F6',borderRadius:5,order:3});
-    revDS.push({type:'bar',label:pre+'กำไรสุทธิ',data:np,backgroundColor:multi?hexA(m.color,.4):'#5EE7C2',borderRadius:5,order:3});
-    revDS.push({type:'line',label:pre+'แนวโน้มรายได้',data:rev,borderColor:multi?m.color:'#F5B73D',backgroundColor:'transparent',borderWidth:2.6,tension:.4,pointRadius:3.2,pointHoverRadius:5,pointBackgroundColor:multi?m.color:'#F5B73D',fill:false,spanGaps:true,order:1});
+    revDS.push({type:'bar',label:pre+'กำไรสุทธิ',data:np,pct:npPct,backgroundColor:multi?hexA(m.color,.4):'#5EE7C2',borderRadius:5,order:3});
+    if(!multi){   // บริษัทเดียวเท่านั้น → เส้นแนวโน้มรายได้แบบสมูท
+      revDS.push({type:'line',label:'แนวโน้มรายได้',data:rev,borderColor:'#F5B73D',backgroundColor:'transparent',borderWidth:2.6,tension:.4,pointRadius:3.2,pointHoverRadius:5,pointBackgroundColor:'#F5B73D',fill:false,spanGaps:true,order:1});
+    }
   });
   if(chRev)chRev.destroy();
   chRev=new Chart(document.getElementById('chRev'),{type:'bar',
     data:{labels,datasets:revDS},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'}}},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');}}}},
       scales:{y:{ticks:{callback:v=>fmt(v,0)}},x:{ticks:{font:{size:11}}}}}
   });
 
   // ----- โครงสร้างต้นทุน (%) : สแต็กต่อบริษัท วางข้างกันในแต่ละปี -----
   const costDS=[];
   comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
-    costDS.push({label:pre+'ต้นทุนขาย',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.cogs/r.rev*100:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:4});
-    costDS.push({label:pre+'ค่าใช้จ่ายขาย&บริหาร',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.sga/r.rev*100:null;}),backgroundColor:'#F5B73D',stack:st,borderRadius:4});
-    costDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:4});
+    costDS.push({label:pre+'ต้นทุนขาย',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.cogs/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.cogs/1e6:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:4});
+    costDS.push({label:pre+'ค่าใช้จ่ายขาย&บริหาร',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.sga/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.sga/1e6:null;}),backgroundColor:'#F5B73D',stack:st,borderRadius:4});
+    costDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:4});
   });
   if(chCost)chCost.destroy();
   chCost=new Chart(document.getElementById('chCost'),{type:'bar',
     data:{labels,datasets:costDS},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y,1)+'%'}}},
+      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const b=c.dataset.baht?c.dataset.baht[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,1)+'%'+(b!=null?' ('+fmt(b,0)+' ลบ.)':'');}}}},
       scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}}}
   });
 
   // ----- รายได้·รายจ่าย·กำไร : สแต็กต่อบริษัท วางข้างกันในแต่ละปี -----
   const rplDS=[];
   comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
-    rplDS.push({label:pre+'รายจ่ายรวม',data:yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/1e6:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:{bottomLeft:5,bottomRight:5}});
-    rplDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:{topLeft:5,topRight:5}});
+    rplDS.push({label:pre+'รายจ่ายรวม',data:yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/1e6:null;}),pct:yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/r.rev*100:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:{bottomLeft:5,bottomRight:5}});
+    rplDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;}),pct:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:{topLeft:5,topRight:5}});
   });
   if(chRPL)chRPL.destroy();
   chRPL=new Chart(document.getElementById('chRPL'),{type:'bar',
     data:{labels,datasets:rplDS},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'}}},
+      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');}}}},
       scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{callback:v=>fmt(v,0)},title:{display:true,text:'ล้านบาท',font:{size:10},color:'#5E6B8A'}}}}
   });
 }
