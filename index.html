@@ -36,10 +36,10 @@ body{
 .yr b{color:var(--acc);font-family:'Space Grotesk'}
 
 /* layout */
-.grid{display:grid;grid-template-columns:288px 1fr;gap:20px;align-items:start}
+.grid{display:grid;grid-template-columns:288px minmax(0,1fr);gap:20px;align-items:start}
 @media(max-width:900px){.grid{grid-template-columns:1fr}}
 
-.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
 .ptitle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--tx2);text-transform:none;margin-bottom:14px;letter-spacing:.2px}
 .ptitle .dot{width:7px;height:7px;border-radius:50%;background:var(--acc)}
 
@@ -80,9 +80,19 @@ body{
 .qchip.grp.brand-all:hover{background:rgba(245,183,61,.22);color:var(--warn)}
 .btag.sm{font-size:9px;padding:0 5px}
 .hd-col{display:flex;flex-direction:column;gap:3px;min-width:0}
-.hd-brands{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.hd-brands{display:flex;flex-wrap:wrap;gap:3px;margin:0 0 4px;justify-content:center}
+.colhd1.v{display:flex;flex-direction:column;align-items:center;gap:4px;width:132px;text-align:center}
+.colhd1.v .hd-nm{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
 .colhd2 .hd-brands{justify-content:center}
 .selchip .btag{margin-left:2px}
+.expbtn{background:var(--card2);border:1px solid var(--line2);color:var(--tx2);border-radius:10px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
+.expbtn:hover{border-color:var(--acc);color:var(--acc)}
+.modal-card.big{width:min(1480px,97vw);height:min(900px,94vh)}
+.block-body{overflow:auto}
+.block-inner{min-width:max-content}
+.block-body .cmpwrap{overflow:visible}
+.block-body table.cmp{font-size:13.5px}
+.block-body .rkname{width:220px}
 .stmt-coinfo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:11px 15px;background:var(--card2);border:1px solid var(--line2);border-radius:12px}
 .stmt-coinfo .ci-name{font-size:15.5px;font-weight:600;color:var(--tx)}
 .stmt-coinfo .ci-id{font-size:12.5px;color:var(--tx2);font-family:'IBM Plex Sans Thai',sans-serif}
@@ -126,7 +136,12 @@ body{
 .clr:hover{border-color:var(--bad);color:var(--bad)}
 
 /* comparison table */
-.cmpwrap{overflow-x:auto;border-radius:var(--r2)}
+.cmpwrap{overflow-x:auto;border-radius:var(--r2);min-width:0}
+.cmpwrap::-webkit-scrollbar{height:10px}
+.cmpwrap::-webkit-scrollbar-track{background:var(--bg2);border-radius:8px}
+.cmpwrap::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
+.cmpwrap::-webkit-scrollbar-thumb:hover{background:var(--tx3)}
+.cmpwrap{scrollbar-width:thin;scrollbar-color:var(--line2) var(--bg2)}
 table.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}
 table.cmp th,table.cmp td{padding:11px 13px;text-align:right;white-space:nowrap}
 table.cmp thead th{position:sticky;top:0;font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
@@ -338,11 +353,14 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
     </div>
 
     <!-- right: compare + rank -->
-    <div style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
       <div class="panel">
         <div class="toolbar">
           <div class="ptitle" style="margin:0"><span class="dot"></span>โซนเปรียบเทียบ</div>
-          <button class="clr" id="clrBtn">ล้างทั้งหมด</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="expbtn" id="cmpExp" title="ดูเต็มจอ">⤢ ขยาย</button>
+            <button class="clr" id="clrBtn">ล้างทั้งหมด</button>
+          </div>
         </div>
         <div class="dz empty" id="dz">
           <div class="dz-empty-tx"><i>⤵</i>ลากการ์ดบริษัทมาวางที่นี่</div>
@@ -354,6 +372,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
         <div class="rkhead">
           <div class="ptitle" style="margin:0"><span class="dot"></span>จัดอันดับ Ranking</div>
           <select class="sel" id="rankSel"></select>
+          <button class="expbtn" id="rankExp" title="ดูเต็มจอ">⤢ ขยาย</button>
         </div>
         <div id="rankCap" class="rkcap"></div>
         <div id="rankList"></div>
@@ -401,7 +420,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
           <input type="text" class="combo-in" id="stmtSearchBS" placeholder="+ เพิ่มบริษัท (พิมพ์ค้นหา)..." autocomplete="off">
           <div class="combo-list" id="stmtListBS"></div>
         </div>
-        <button class="clr" id="stmtClrBS">ล้าง</button>
+        <button class="expbtn" id="stmtExpBS" title="ดูเต็มจอ">⤢ ขยาย</button><button class="clr" id="stmtClrBS">ล้าง</button>
       </div>
     </div>
     <div class="stmt-cos" id="stmtCosBS"></div>
@@ -418,7 +437,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
           <input type="text" class="combo-in" id="stmtSearchPL" placeholder="+ เพิ่มบริษัท (พิมพ์ค้นหา)..." autocomplete="off">
           <div class="combo-list" id="stmtListPL"></div>
         </div>
-        <button class="clr" id="stmtClrPL">ล้าง</button>
+        <button class="expbtn" id="stmtExpPL" title="ดูเต็มจอ">⤢ ขยาย</button><button class="clr" id="stmtClrPL">ล้าง</button>
       </div>
     </div>
     <div class="stmt-cos" id="stmtCosPL"></div>
@@ -437,6 +456,17 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
       <button class="modal-x" id="modalX">×</button>
     </div>
     <div class="modal-body"><canvas id="bigCanvas"></canvas><div class="dcenter" id="bigCenter" style="display:none"></div></div>
+  </div>
+</div>
+
+<div class="modal" id="blockModal">
+  <div class="modal-bg" id="blockBg"></div>
+  <div class="modal-card big">
+    <div class="modal-head">
+      <span id="blockTitle" class="modal-title"></span>
+      <button class="modal-x" id="blockX">×</button>
+    </div>
+    <div class="modal-body block-body" id="blockBody"></div>
   </div>
 </div>
 
@@ -651,7 +681,6 @@ function buildGroupChips(){
   let html=types.map(g=>`<button class="qchip grp type" data-g="${g}">${g}</button>`).join('');
   if(brands.length){
     html+='<button class="qchip grp brand brand-all" data-all="1" title="เลือกบริษัทที่มีแบรนด์ทั้งหมด">แบรนด์</button>';
-    html+=brands.map(g=>`<button class="qchip grp brand" data-g="${g}">${g}</button>`).join('');
   }
   cont.innerHTML=html;
   const allBtn=cont.querySelector('.brand-all');
@@ -713,9 +742,9 @@ function renderCmp(){
   let html='<div class="cmpwrap"><table class="cmp"><thead><tr><th>อัตราส่วน</th>';
   cols.forEach(col=>{
     if(usingCmp){
-      html+=`<th><div class="colhd2"><span class="yrbig" style="background:${yearColor(col.y)}">${col.y}</span><span class="conm"><span class="sd" style="background:${col.meta.color}"></span><span class="cnm-t">${col.meta.name}</span></span>${brandHdrHTML(col.meta.id)}</div></th>`;
+      html+=`<th><div class="colhd2"><span class="yrbig" style="background:${yearColor(col.y)}">${col.y}</span>${brandHdrHTML(col.meta.id)}<span class="conm"><span class="sd" style="background:${col.meta.color}"></span><span class="cnm-t">${col.meta.name}</span></span></div></th>`;
     }else{
-      html+=`<th><div class="colhd1"><span class="sd" style="background:${col.meta.color}"></span><span class="hd-col"><span class="cnm-t">${col.meta.name}</span>${brandHdrHTML(col.meta.id)}</span></div></th>`;
+      html+=`<th><div class="colhd1 v">${brandHdrHTML(col.meta.id)}<span class="hd-nm"><span class="sd" style="background:${col.meta.color}"></span><span class="cnm-t">${col.meta.name}</span></span></div></th>`;
     }
   });
   html+='</tr></thead><tbody>';
@@ -1076,7 +1105,25 @@ function openZoom(srcChart,title){
 function closeZoom(){modal.classList.remove('show');if(bigChart){bigChart.destroy();bigChart=null;}}
 document.getElementById('modalX').onclick=closeZoom;
 document.getElementById('modalBg').onclick=closeZoom;
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeZoom();});
+
+/* ===== ขยายบล็อก HTML เต็มจอ (ตาราง/อันดับ/งบ) ===== */
+const blockModal=document.getElementById('blockModal');
+function openBlock(srcId,title){
+  const src=document.getElementById(srcId); if(!src)return;
+  document.getElementById('blockTitle').textContent=title||'';
+  document.getElementById('blockBody').innerHTML='<div class="block-inner">'+src.innerHTML+'</div>';
+  blockModal.classList.add('show');
+}
+function closeBlock(){blockModal.classList.remove('show');document.getElementById('blockBody').innerHTML='';}
+document.getElementById('blockX').onclick=closeBlock;
+document.getElementById('blockBg').onclick=closeBlock;
+const _exp=(btn,srcId,title)=>{const b=document.getElementById(btn);if(b)b.onclick=()=>openBlock(srcId,title);};
+_exp('cmpExp','cmpArea','เปรียบเทียบอัตราส่วน');
+_exp('rankExp','rankList','จัดอันดับ Ranking');
+_exp('stmtExpBS','stmtBS','งบแสดงฐานะการเงิน');
+_exp('stmtExpPL','stmtPL','งบกำไรขาดทุน');
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeZoom();closeBlock();}});
 
 function wireZoom(canvasId,getChart,title){
   const cv=document.getElementById(canvasId);
