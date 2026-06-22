@@ -60,6 +60,12 @@ body{
 .qchip.clear{margin-left:auto}
 .qchip.clear:hover{border-color:var(--bad);color:var(--bad)}
 .qchip.star:hover{border-color:var(--warn);color:var(--warn)}
+.qchip.grp:hover{border-color:var(--acc2);color:var(--acc2)}
+.stmt-coinfo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:11px 15px;background:var(--card2);border:1px solid var(--line2);border-radius:12px}
+.stmt-coinfo .ci-name{font-size:15.5px;font-weight:600;color:var(--tx)}
+.stmt-coinfo .ci-id{font-size:12.5px;color:var(--tx2);font-family:'IBM Plex Sans Thai',sans-serif}
+.stmt-coinfo .ci-id b{color:var(--acc);font-family:'Space Grotesk';letter-spacing:1px}
+.gtag{font-size:11px;font-weight:600;color:var(--acc2);background:rgba(59,130,246,.14);border:1px solid rgba(59,130,246,.32);border-radius:7px;padding:2px 9px;margin-left:4px}
 .chip .star-btn{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--tx3);transition:.15s;padding:4px;z-index:2}
 .chip .star-btn:hover{transform:translateY(-50%) scale(1.2)}
 .chip .star-btn.on{color:var(--warn)}
@@ -296,6 +302,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
         <button class="qchip" id="qAll">ทั้งหมด</button>
         <button class="qchip" id="qTop">Top 10 กำไรสุทธิ</button>
         <button class="qchip star" id="qStar">★ ติดดาว</button>
+        <span id="groupChips" style="display:contents"></span>
         <button class="qchip clear" id="qClear">ล้าง</button>
       </div>
       <div class="searchbox">
@@ -375,6 +382,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
       </div>
     </div>
     <div class="stmt-cos" id="stmtCosBS"></div>
+    <div class="stmt-coinfo" id="stmtInfoBS" style="display:none"></div>
     <div class="stmtwrap" id="stmtBS"></div>
     <div class="hint" style="margin-top:12px"><span>●</span><span>เลือกบริษัทมุมขวา · ลากชิปปีด้านบนมาช่อง “ปีที่นำมาเทียบ” เพื่อดูเฉพาะบางปี · %เปลี่ยนแปลงเทียบปีก่อนหน้า (เขียว=เพิ่ม แดง=ลด)</span></div>
   </div>
@@ -391,6 +399,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
       </div>
     </div>
     <div class="stmt-cos" id="stmtCosPL"></div>
+    <div class="stmt-coinfo" id="stmtInfoPL" style="display:none"></div>
     <div class="stmtwrap" id="stmtPL"></div>
     <div class="hint" style="margin-top:12px"><span>●</span><span>เลือกบริษัทมุมขวา · ลากชิปปีด้านบนมาช่อง “ปีที่นำมาเทียบ” เพื่อดูเฉพาะบางปี · %เปลี่ยนแปลงเทียบปีก่อนหน้า (เขียว=เพิ่ม แดง=ลด)</span></div>
   </div>
@@ -432,6 +441,47 @@ const SHEET_CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vSmlkVw9y31
 const TH={reg:'เลขนิติบุคคล',name:'ชื่อ',year:'ปี',recv:'ลูกหนี้การค้าสุทธิ',inv:'สินค้าคงเหลือ',ca:'สินทรัพย์หมุนเวียน',ppe:'ที่ดิน อาคารและอุปกรณ์',nca:'สินทรัพย์ไม่หมุนเวียน',assets:'สินทรัพย์รวม',cl:'หนี้สินหมุนเวียน',ncl:'หนี้สินไม่หมุนเวียน',liab:'หนี้สินรวม',eq:'ส่วนของผู้ถือหุ้น',mainRev:'รายได้หลัก',rev:'รายได้รวม',cogs:'ต้นทุนขาย',gp:'กำไร(ขาดทุน) ขั้นต้น',sga:'ค่าใช้จ่ายในการขายและบริหาร',exp:'รายจ่ายรวม',int:'ดอกเบี้ยจ่าย',pre:'กำไร(ขาดทุน) ก่อนภาษี',tax:'ภาษีเงินได้',np:'กำไร(ขาดทุน) สุทธิ',r9:'9. อัตราการหมุนเวียนของเจ้าหนี้ (เท่า)'};
 const NUMF=['recv','inv','ca','ppe','nca','assets','cl','ncl','liab','eq','mainRev','rev','cogs','gp','sga','exp','int','pre','tax','np','r9'];
 const _norm=s=>(s||'').replace(/\uFEFF/g,'').trim();
+const _idkey=s=>(_norm(s)+'').replace(/\D/g,'').replace(/^0+/,'');   // คีย์เทียบ ID (ตัดตัวเลข 0 นำหน้า)
+/* ===== กลุ่มธุรกิจ ===== */
+const GROUP_CSV_URL='';   /* <<<<<< วาง URL ชีตจัดกลุ่ม (Publish to web > CSV) ตรงนี้ — เว้นว่าง = ปิด */
+let GROUPMAP={}, GROUPLIST=[], GROUPSHEET=[];
+function _addGroup(idk,gstr){
+  if(!idk||!gstr)return;
+  (gstr+'').split(/[,;/|、]/).map(x=>_norm(x)).filter(Boolean).forEach(g=>{
+    GROUPMAP[idk]=GROUPMAP[idk]||[]; if(!GROUPMAP[idk].includes(g))GROUPMAP[idk].push(g);
+    if(!GROUPLIST.includes(g))GROUPLIST.push(g);
+  });
+}
+function rebuildGroups(){
+  GROUPMAP={}; GROUPLIST=[];
+  ALLDATA.forEach(r=>{ if(r.grp)_addGroup(_idkey(r.id),r.grp); });   // จากคอลัมน์กลุ่มในชีตหลัก (ถ้ามี)
+  GROUPSHEET.forEach(([idk,g])=>_addGroup(idk,g));                    // จากชีตจัดกลุ่มแยก (ถ้ามี)
+  if(typeof buildGroupChips==='function')buildGroupChips();
+}
+function _findCol(keys,row,cands){
+  for(const c of cands){const lk=c.toLowerCase();for(const nk in keys){if(nk.includes(lk))return row[keys[nk]];}}
+  return '';
+}
+async function loadGroups(){
+  if(!GROUP_CSV_URL||typeof Papa==='undefined'){rebuildGroups();return;}
+  try{
+    let url=normalizeSheetUrl(GROUP_CSV_URL); url+=(url.includes('?')?'&':'?')+'_cb='+Date.now();
+    const res=await fetch(url,{cache:'no-store'}); if(!res.ok)throw new Error('HTTP '+res.status);
+    const parsed=Papa.parse(await res.text(),{header:true,skipEmptyLines:true});
+    GROUPSHEET=[];
+    const GHINTS=['ประเภท','แบรนด์','กลุ่ม','หมวด','brand','group','type'];   // คอลัมน์ที่ถือเป็นกลุ่ม
+    (parsed.data||[]).forEach(row=>{
+      const keys={}; for(const k in row)keys[_norm(k).toLowerCase()]=k;
+      const idv=_findCol(keys,row,['เลขนิติบุคคล','เลขทะเบียน','นิติบุคคล','id','เลข']);
+      if(!idv)return;
+      const idk=_idkey(idv);
+      const gset=new Set();
+      GHINTS.forEach(hint=>{ for(const nk in keys){ if(nk.includes(hint))gset.add(keys[nk]); } });
+      gset.forEach(origKey=>{ const val=row[origKey]; if(val&&_norm(val))GROUPSHEET.push([idk,val]); });
+    });
+    rebuildGroups();
+  }catch(e){ console.error('Group sheet load failed:',e); rebuildGroups(); }
+}
 function _cleanName(s){s=_norm(s).replace('ชื่อนิติบุคคล :','').trim();s=s.replace(/^บริษัท\s*/,'').replace(/\s*จำกัด\s*\(มหาชน\)\s*$/,'').replace(/\s*จำกัด\s*$/,'');return s.trim();}
 function _toNum(s){s=_norm(s).replace(/,/g,'');if(s===''||s==='-')return 0;const v=parseFloat(s);return isNaN(v)?0:v;}
 function normalizeSheetUrl(u){
@@ -442,7 +492,7 @@ function normalizeSheetUrl(u){
     return 'https://docs.google.com/spreadsheets/d/'+m[1]+'/export?format=csv&gid='+gid; }
   return u;
 }
-function mapSheetRows(rows){const out=[];for(const row of rows){const keys={};for(const k in row)keys[_norm(k)]=k;const g=th=>row[keys[th]];const rec={id:_norm(g(TH.reg)),name:_cleanName(g(TH.name)),year:_norm(g(TH.year))};for(const f of NUMF)rec[f]=_toNum(g(TH[f]));if(!rec.id||!rec.year)continue;if(!rec.assets&&!rec.rev)continue;out.push(rec);}return out;}
+function mapSheetRows(rows){const out=[];for(const row of rows){const keys={};for(const k in row)keys[_norm(k)]=k;const g=th=>row[keys[th]];const rec={id:_norm(g(TH.reg)),name:_cleanName(g(TH.name)),year:_norm(g(TH.year))};for(const f of NUMF)rec[f]=_toNum(g(TH[f]));const gk=Object.keys(keys).find(k=>/กลุ่ม|ประเภทธุรกิจ|business|^group$/i.test(k));if(gk)rec.grp=_norm(row[keys[gk]]);if(!rec.id||!rec.year)continue;if(!rec.assets&&!rec.rev)continue;out.push(rec);}return out;}
 function setBadge(state){const el=document.getElementById('dataSrc');if(!el)return;const m={builtin:['','ข้อมูลในไฟล์'],load:['load','กำลังโหลดจากชีต…'],sheet:['ok','เชื่อมต่อ Google Sheet'],error:['warn','โหลดชีตไม่ได้ — ใช้ข้อมูลในไฟล์']};const a=m[state]||m.builtin;el.className='dsrc '+a[0];el.innerHTML='<span class="d"></span>'+a[1];}
 
 /* หมวดหมู่อัตราส่วน (ตามแบบ DBD) */
@@ -546,6 +596,15 @@ document.getElementById('qStar').onclick=()=>{
   selected=FULL.filter(c=>stars.includes(c.id)).map(c=>c.id);
   render();
 };
+function buildGroupChips(){
+  const cont=document.getElementById('groupChips'); if(!cont)return;
+  cont.innerHTML=GROUPLIST.map(g=>`<button class="qchip grp" data-g="${g}">${g}</button>`).join('');
+  cont.querySelectorAll('.qchip.grp').forEach(b=>b.onclick=()=>{
+    const ids=FULL.filter(c=>(GROUPMAP[_idkey(c.id)]||[]).includes(b.dataset.g)).map(c=>c.id);
+    if(!ids.length){alert('ยังไม่มีบริษัทในกลุ่ม “'+b.dataset.g+'” (ปีนี้)');return;}
+    selected=ids; render();
+  });
+}
 
 /* search filter */
 const searchInput=document.getElementById('search');
@@ -980,6 +1039,7 @@ async function loadSheet(){
     rebuildPool(); doSearch();
     render(); renderRank(); drawAsset(); drawFund();
     renderStmtPickers(); renderStatements();
+    rebuildGroups();
     setBadge('sheet');
   }catch(e){console.error('Sheet load failed:',e); setBadge('error');}
 }
@@ -1066,15 +1126,23 @@ function stmtChg(v,pv,stacked){
         s=(chg>0?'+':'')+fmt(chg,stacked?1:2)+(stacked?'%':'');
   return stacked?`<div class="pc ${cls}" style="font-size:10px;margin-top:2px">${s}</div>`:`<span class="pc ${cls}">${s}</span>`;
 }
-function renderStmt(rows,elId){
+function renderStmt(rows,elId,infoId){
   const el=document.getElementById(elId); if(!el)return;
+  const info=infoId?document.getElementById(infoId):null;
   const cos = stmtCos.length ? stmtCos : (FULL[0]?[FULL[0].id]:[]);
-  if(!cos.length){el.innerHTML='<div class="empty-note">ยังไม่มีข้อมูลบริษัท</div>';return;}
+  if(!cos.length){el.innerHTML='<div class="empty-note">ยังไม่มีข้อมูลบริษัท</div>';if(info)info.style.display='none';return;}
   const yrs=(cmpYears.length?[...cmpYears]:[...YEARS]).sort();
   const recAt=(id,y)=>ALLDATA.find(r=>r.id===id&&r.year===y)||null;
   let h;
   if(cos.length===1){   // ----- บริษัทเดียว: ฟอร์ม DBD (ปี × [จำนวนเงิน | %เปลี่ยนแปลง]) -----
-    const co=cos[0];
+    const co=cos[0], meta=companyMeta(co);
+    if(info){
+      const idDisp=String(co).replace(/\D/g,'').padStart(13,'0');
+      const grps=GROUPMAP[_idkey(co)]||[];
+      info.innerHTML=`<span class="ci-name">${meta.name}</span><span class="ci-id">เลขทะเบียนนิติบุคคล : <b>${idDisp}</b></span>`
+        +(grps.length?`<span class="ci-grps">${grps.map(g=>`<span class="gtag">${g}</span>`).join('')}</span>`:'');
+      info.style.display='flex';
+    }
     h='<table class="stmt"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
     yrs.forEach((y,i)=>h+=`<th colspan="2"${i>0?' class="yrcol"':''}><span class="yrbig" style="background:${yearColor(y)}">${y}</span></th>`);
     h+='</tr><tr>'; yrs.forEach((y,i)=>h+=`<th${i>0?' class="yrcol"':''}>จำนวนเงิน</th><th>%เปลี่ยนแปลง</th>`);
@@ -1086,6 +1154,7 @@ function renderStmt(rows,elId){
       h+='</tr>';
     });
   }else{   // ----- หลายบริษัท: กรุ๊ปตามปี · บริษัทยืนข้างกัน · จำนวนเงิน + %เปลี่ยนแปลงเล็กใต้ค่า -----
+    if(info)info.style.display='none';
     const metas=cos.map(companyMeta);
     h='<table class="stmt stmt-multi"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
     yrs.forEach((y,i)=>h+=`<th colspan="${metas.length}"${i>0?' class="yrcol"':''}><span class="yrbig" style="background:${yearColor(y)}">${y}</span></th>`);
@@ -1103,7 +1172,7 @@ function renderStmt(rows,elId){
   h+='</tbody></table>';
   el.innerHTML=h;
 }
-function renderStatements(){ renderStmt(STMT_BS,'stmtBS'); renderStmt(STMT_PL,'stmtPL'); }
+function renderStatements(){ renderStmt(STMT_BS,'stmtBS','stmtInfoBS'); renderStmt(STMT_PL,'stmtPL','stmtInfoPL'); }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.tabpanel').forEach(x=>x.classList.remove('active'));
@@ -1116,6 +1185,7 @@ stmtCos = selected.length ? [...selected] : (stmtCompanies()[0]?[stmtCompanies()
 setupCombo('stmtSearchBS','stmtListBS'); setupCombo('stmtSearchPL','stmtListPL');
 renderStmtPickers(); renderStatements();
 render(); renderRank(); drawAsset(); drawFund();
+rebuildGroups(); loadGroups();
 loadSheet();</script>
 </body>
 </html>
