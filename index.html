@@ -296,14 +296,22 @@ reindex(); buildFull();
 
 /* ===== Google Sheet (CSV) — ทางที่ 2 =====
    วาง URL จาก Google Sheets > File > Share > Publish to web > เลือก CSV ตรงนี้
-   เช่น 'https://docs.google.com/spreadsheets/d/16ffJi3PRcgrYiShjVmP8P82mpTZSV9yxG3_lA0uK-vU/edit?usp=sharing'
+   เช่น 'https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=0&single=true&output=csv'
    เว้นว่าง = ใช้ข้อมูลที่ฝังในไฟล์ (เปิดแบบ offline ได้) */
-const SHEET_CSV_URL='';
+const SHEET_CSV_URL='https://docs.google.com/spreadsheets/d/16ffJi3PRcgrYiShjVmP8P82mpTZSV9yxG3_lA0uK-vU/export?format=csv&gid=0';
 const TH={reg:'เลขนิติบุคคล',name:'ชื่อ',year:'ปี',recv:'ลูกหนี้การค้าสุทธิ',inv:'สินค้าคงเหลือ',ca:'สินทรัพย์หมุนเวียน',ppe:'ที่ดิน อาคารและอุปกรณ์',nca:'สินทรัพย์ไม่หมุนเวียน',assets:'สินทรัพย์รวม',cl:'หนี้สินหมุนเวียน',ncl:'หนี้สินไม่หมุนเวียน',liab:'หนี้สินรวม',eq:'ส่วนของผู้ถือหุ้น',mainRev:'รายได้หลัก',rev:'รายได้รวม',cogs:'ต้นทุนขาย',gp:'กำไร(ขาดทุน) ขั้นต้น',sga:'ค่าใช้จ่ายในการขายและบริหาร',exp:'รายจ่ายรวม',int:'ดอกเบี้ยจ่าย',pre:'กำไร(ขาดทุน) ก่อนภาษี',tax:'ภาษีเงินได้',np:'กำไร(ขาดทุน) สุทธิ',r9:'9. อัตราการหมุนเวียนของเจ้าหนี้ (เท่า)'};
 const NUMF=['recv','inv','ca','ppe','nca','assets','cl','ncl','liab','eq','mainRev','rev','cogs','gp','sga','exp','int','pre','tax','np','r9'];
 const _norm=s=>(s||'').replace(/\uFEFF/g,'').trim();
 function _cleanName(s){s=_norm(s).replace('ชื่อนิติบุคคล :','').trim();s=s.replace(/^บริษัท\s*/,'').replace(/\s*จำกัด\s*\(มหาชน\)\s*$/,'').replace(/\s*จำกัด\s*$/,'');return s.trim();}
 function _toNum(s){s=_norm(s).replace(/,/g,'');if(s===''||s==='-')return 0;const v=parseFloat(s);return isNaN(v)?0:v;}
+function normalizeSheetUrl(u){
+  u=(u||'').trim(); if(!u) return '';
+  if(/output=csv|format=csv|out:csv/.test(u)) return u;          // already a CSV endpoint
+  const m=u.match(/\/d\/([a-zA-Z0-9-_]+)/);                       // a normal sheet link
+  if(m){ const g=u.match(/[#&?]gid=(\d+)/); const gid=g?g[1]:'0';
+    return 'https://docs.google.com/spreadsheets/d/'+m[1]+'/export?format=csv&gid='+gid; }
+  return u;
+}
 function mapSheetRows(rows){const out=[];for(const row of rows){const keys={};for(const k in row)keys[_norm(k)]=k;const g=th=>row[keys[th]];const rec={id:_norm(g(TH.reg)),name:_cleanName(g(TH.name)),year:_norm(g(TH.year))};for(const f of NUMF)rec[f]=_toNum(g(TH[f]));if(!rec.id||!rec.year)continue;if(!rec.assets&&!rec.rev)continue;out.push(rec);}return out;}
 function setBadge(state){const el=document.getElementById('dataSrc');if(!el)return;const m={builtin:['','ข้อมูลในไฟล์'],load:['load','กำลังโหลดจากชีต…'],sheet:['ok','เชื่อมต่อ Google Sheet'],error:['warn','โหลดชีตไม่ได้ — ใช้ข้อมูลในไฟล์']};const a=m[state]||m.builtin;el.className='dsrc '+a[0];el.innerHTML='<span class="d"></span>'+a[1];}
 
@@ -345,8 +353,15 @@ const fmt=(v,d)=>v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFracti
 const ini=n=>n.replace(/[^ก-๙a-zA-Z]/g,'').slice(0,2);
 
 let selected=[]; // array of ids
-let stars=JSON.parse(localStorage.getItem('dbdStars')||'[]');
-function saveStars(){localStorage.setItem('dbdStars',JSON.stringify(stars));}
+// safe storage: localStorage throws on file:// in some browsers / sandboxed iframes.
+// Wrap it so a failure never aborts the whole app (year picker, drag & drop, etc.).
+const safeStore={
+  get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+};
+let stars=[];
+try{stars=JSON.parse(safeStore.get('dbdStars')||'[]');}catch(e){stars=[];}
+function saveStars(){safeStore.set('dbdStars',JSON.stringify(stars));}
 function toggleStar(id){
   if(stars.includes(id))stars=stars.filter(x=>x!==id); else stars.push(id);
   saveStars();
@@ -375,7 +390,8 @@ function rebuildPool(){
   el.querySelector('.star-btn').addEventListener('dblclick',e=>e.stopPropagation());
   pool.appendChild(el);
  });
- if(typeof doSearch==='function')doSearch();
+ // Note: do NOT call doSearch() here — searchInput is defined later (TDZ).
+ // Callers that need to re-apply the filter (setYear/loadSheet) call doSearch() themselves.
 }
 rebuildPool();
 
@@ -657,7 +673,8 @@ async function loadSheet(){
   if(typeof Papa==='undefined'){setBadge('error');return;}
   setBadge('load');
   try{
-    const res=await fetch(SHEET_CSV_URL);
+    const url=normalizeSheetUrl(SHEET_CSV_URL);
+    const res=await fetch(url);
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text=await res.text();
     const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
