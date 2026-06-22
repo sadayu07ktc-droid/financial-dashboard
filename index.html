@@ -93,6 +93,14 @@ body{
 .block-body .cmpwrap{overflow:visible}
 .block-body table.cmp{font-size:13.5px}
 .block-body .rkname{width:220px}
+.grabx{cursor:grab}
+.grabx.dragging-x{cursor:grabbing;user-select:none}
+.grabx.dragging-x *{cursor:grabbing}
+.blk-sub{font-size:12.5px;color:var(--tx2);margin-bottom:14px;padding:9px 13px;background:var(--card2);border:1px solid var(--line);border-radius:10px}
+.blk-sub b{color:var(--acc)}
+.conm2-w{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.conm2-w .hd-brands{justify-content:flex-end;margin:0}
+table.stmt.stmt-multi thead tr:last-child th .conm2-w{align-items:flex-end}
 .stmt-coinfo{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px;padding:11px 15px;background:var(--card2);border:1px solid var(--line2);border-radius:12px}
 .stmt-coinfo .ci-name{font-size:15.5px;font-weight:600;color:var(--tx)}
 .stmt-coinfo .ci-id{font-size:12.5px;color:var(--tx2);font-family:'IBM Plex Sans Thai',sans-serif}
@@ -144,8 +152,9 @@ body{
 .cmpwrap{scrollbar-width:thin;scrollbar-color:var(--line2) var(--bg2)}
 table.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}
 table.cmp th,table.cmp td{padding:11px 13px;text-align:right;white-space:nowrap}
-table.cmp thead th{position:sticky;top:0;font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
-table.cmp thead th:first-child{text-align:left}
+table.cmp thead th{position:sticky;top:0;z-index:2;background:var(--card);font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
+.block-body table.cmp thead th{background:var(--card)}
+table.cmp thead th:first-child{text-align:left;z-index:3}
 table.cmp td:first-child,table.cmp th:first-child{text-align:left;color:var(--tx2);font-weight:400}
 table.cmp tbody tr{border-bottom:1px solid var(--line)}
 table.cmp tbody tr:hover{background:rgba(255,255,255,.02)}
@@ -812,6 +821,7 @@ function renderCmp(){
   html+='</tbody></table></div>';
   if(cols.length>1)html+='<div class="hint" style="margin-top:12px"><span>●</span><span>ไฮไลต์เขียว = ดีที่สุด · แดง = ต้องระวัง'+(usingCmp?' · ตัวเลขเล็กใต้ค่า = %เปลี่ยนแปลงจากปีก่อน (เขียว=ดีขึ้น แดง=แย่ลง)':'')+'</span></div>';
   area.innerHTML=html;
+  if(typeof enableDragScroll==='function')enableDragScroll(area.querySelector('.cmpwrap'));
 }
 
 /* ranking */
@@ -1108,20 +1118,46 @@ document.getElementById('modalBg').onclick=closeZoom;
 
 /* ===== ขยายบล็อก HTML เต็มจอ (ตาราง/อันดับ/งบ) ===== */
 const blockModal=document.getElementById('blockModal');
-function openBlock(srcId,title){
-  const src=document.getElementById(srcId); if(!src)return;
+function openBlock(title,html){
   document.getElementById('blockTitle').textContent=title||'';
-  document.getElementById('blockBody').innerHTML='<div class="block-inner">'+src.innerHTML+'</div>';
+  document.getElementById('blockBody').innerHTML='<div class="block-inner">'+(html||'')+'</div>';
   blockModal.classList.add('show');
 }
 function closeBlock(){blockModal.classList.remove('show');document.getElementById('blockBody').innerHTML='';}
 document.getElementById('blockX').onclick=closeBlock;
 document.getElementById('blockBg').onclick=closeBlock;
-const _exp=(btn,srcId,title)=>{const b=document.getElementById(btn);if(b)b.onclick=()=>openBlock(srcId,title);};
-_exp('cmpExp','cmpArea','เปรียบเทียบอัตราส่วน');
-_exp('rankExp','rankList','จัดอันดับ Ranking');
-_exp('stmtExpBS','stmtBS','งบแสดงฐานะการเงิน');
-_exp('stmtExpPL','stmtPL','งบกำไรขาดทุน');
+const _byId=id=>{const e=document.getElementById(id);return e?e.innerHTML:'';};
+function _wireExp(btn,fn){const b=document.getElementById(btn);if(b)b.onclick=fn;}
+_wireExp('cmpExp',()=>openBlock('เปรียบเทียบอัตราส่วน',_byId('cmpArea')));
+_wireExp('rankExp',()=>{
+  const metric=rankSel.options[rankSel.selectedIndex]?rankSel.options[rankSel.selectedIndex].text:'';
+  const cap=document.getElementById('rankCap').textContent;
+  openBlock('จัดอันดับ: '+metric,`<div class="blk-sub">เกณฑ์: <b>${metric}</b> · ${cap}</div>`+_byId('rankList'));
+});
+_wireExp('stmtExpBS',()=>openBlock('งบแสดงฐานะการเงิน',_stmtBlock('stmtInfoBS','stmtBS')));
+_wireExp('stmtExpPL',()=>openBlock('งบกำไรขาดทุน',_stmtBlock('stmtInfoPL','stmtPL')));
+function _stmtBlock(infoId,wrapId){
+  const info=document.getElementById(infoId);
+  const infoHTML=(info&&info.style.display!=='none'&&info.innerHTML)?`<div class="stmt-coinfo" style="display:flex">${info.innerHTML}</div>`:'';
+  return infoHTML+_byId(wrapId);
+}
+
+/* ===== ลากด้วยเมาส์เพื่อเลื่อนแนวนอน (grab-to-pan) ===== */
+let _dragEl=null,_dragSX=0,_dragSL=0;
+window.addEventListener('mousemove',e=>{ if(!_dragEl)return; _dragEl.scrollLeft=_dragSL-(e.pageX-_dragSX); e.preventDefault(); });
+window.addEventListener('mouseup',()=>{ if(_dragEl){_dragEl.classList.remove('dragging-x');_dragEl=null;} });
+function enableDragScroll(el){
+  if(!el||el._ds)return; el._ds=true; el.classList.add('grabx');
+  el.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    if(e.target.closest('button,a,input,select,.sx,.combo'))return;
+    if(el.scrollWidth<=el.clientWidth)return;            // ไม่มีอะไรให้เลื่อน
+    _dragEl=el;_dragSX=e.pageX;_dragSL=el.scrollLeft;el.classList.add('dragging-x');e.preventDefault();
+  });
+}
+enableDragScroll(document.getElementById('blockBody'));
+enableDragScroll(document.getElementById('stmtBS'));
+enableDragScroll(document.getElementById('stmtPL'));
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeZoom();closeBlock();}});
 
@@ -1317,9 +1353,12 @@ function renderStmt(rows,elId,infoId){
     const co=cos[0], meta=companyMeta(co);
     if(info){
       const idDisp=String(co).replace(/\D/g,'').padStart(13,'0');
-      const grps=GROUPMAP[_idkey(co)]||[];
+      const allg=GROUPMAP[_idkey(co)]||[];
+      const types=allg.filter(g=>GROUPCAT[g]!=='brand');
+      const brs=allg.filter(g=>GROUPCAT[g]==='brand');
+      const tagHTML=types.map(g=>`<span class="gtag">${g}</span>`).join('')+brs.map(b=>`<span class="btag">${b}</span>`).join('');
       info.innerHTML=`<span class="ci-name">${meta.name}</span><span class="ci-id">เลขทะเบียนนิติบุคคล : <b>${idDisp}</b></span>`
-        +(grps.length?`<span class="ci-grps">${grps.map(g=>`<span class="gtag">${g}</span>`).join('')}</span>`:'');
+        +(tagHTML?`<span class="ci-grps">${tagHTML}</span>`:'');
       info.style.display='flex';
     }
     h='<table class="stmt"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
@@ -1338,7 +1377,9 @@ function renderStmt(rows,elId,infoId){
     h='<table class="stmt stmt-multi"><thead><tr class="yhd"><th class="lbl" rowspan="2">หน่วย : บาท</th>';
     yrs.forEach((y,i)=>h+=`<th colspan="${metas.length}"${i>0?' class="yrcol"':''}><span class="yrbig" style="background:${yearColor(y)}">${y}</span></th>`);
     h+='</tr><tr>';
-    yrs.forEach((y,yi)=>metas.forEach((m,ci)=>h+=`<th class="${ci===0&&yi>0?'yrcol':''}" title="${m.name}"><span class="conm2"><span class="sd" style="background:${m.color}"></span>${m.name}</span></th>`));
+    yrs.forEach((y,yi)=>metas.forEach((m,ci)=>{const bs=coBrands(m.id);
+      const bt=bs.length?`<span class="hd-brands">${bs.map(b=>`<span class="btag sm">${b}</span>`).join('')}</span>`:'';
+      h+=`<th class="${ci===0&&yi>0?'yrcol':''}" title="${m.name}"><div class="conm2-w"><span class="conm2"><span class="sd" style="background:${m.color}"></span>${m.name}</span>${bt}</div></th>`;}));
     h+='</tr></thead><tbody>';
     rows.forEach(row=>{
       h+=`<tr${row.sum?' class="sumrow"':''}><td class="lbl">${row.l}</td>`;
