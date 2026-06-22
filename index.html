@@ -908,7 +908,7 @@ const brandTopPlugin={
     const ctx=chart.ctx, n=chart.data.labels.length;
     ctx.save();
     ctx.font="600 11px 'IBM Plex Sans Thai',sans-serif";
-    ctx.fillStyle='#EAF0FF';
+    ctx.fillStyle='#F5B73D';
     ctx.textAlign='center';
     ctx.textBaseline='bottom';
     for(let i=0;i<n;i++){
@@ -1147,6 +1147,7 @@ function openZoom(srcChart,title){
   const cfg=srcChart.config;
   bigChart=new Chart(document.getElementById('bigCanvas'),{
     type:cfg.type,
+    plugins:(cfg.plugins||[]),
     data:{labels:(srcChart.data.labels||[]).slice(),datasets:srcChart.data.datasets.map(d=>Object.assign({},d))},
     options:Object.assign({},cfg.options,{maintainAspectRatio:false,responsive:true})
   });
