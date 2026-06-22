@@ -124,7 +124,7 @@ table.stmt.stmt-multi thead tr:last-child th .conm2-w{align-items:flex-end}
 .chip:active{cursor:grabbing}
 .chip.dragging{opacity:.4}
 .chip .swatch{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:13px;color:#06121f}
-.chip .cn{font-size:13px;font-weight:500;line-height:1.35;word-break:break-word}
+.chip .cn{font-size:13px;font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .cm{font-size:11.5px;color:var(--tx2);font-family:'Space Grotesk';margin-top:4px}
 .chip .grip{position:absolute;right:11px;color:var(--tx3);font-size:15px;opacity:.5}
 .hint{font-size:11.5px;color:var(--tx3);margin-top:12px;line-height:1.5;display:flex;gap:6px}
@@ -162,7 +162,8 @@ table.cmp tbody td:first-child{z-index:3}
 table.cmp tbody tr:hover td:first-child{background:var(--card2)}
 table.cmp tbody tr{border-bottom:1px solid var(--line)}
 table.cmp tbody tr:hover{background:rgba(255,255,255,.02)}
-table.cmp tbody tr.catrow td,table.cmp tbody tr.catrow:hover td{background:var(--bg2);text-align:left;font-weight:600;font-size:11.5px;color:var(--tx);letter-spacing:.2px;padding:9px 13px;border-bottom:1px solid var(--line2);position:sticky;left:0;z-index:3}
+table.cmp tbody tr.catrow td,table.cmp tbody tr.catrow:hover td{background:var(--bg2);text-align:left;font-weight:600;font-size:11.5px;color:var(--tx);letter-spacing:.2px;padding:9px 13px;border-bottom:1px solid var(--line2)}
+.catlabel{position:sticky;left:13px;display:inline-flex;align-items:center;white-space:nowrap}
 .catdot{display:inline-block;width:8px;height:8px;border-radius:3px;margin-right:8px;vertical-align:middle}
 .val{font-family:'Space Grotesk';font-weight:600}
 .best{color:#06121f;background:var(--acc);border-radius:8px;padding:3px 9px;display:inline-block}
@@ -653,7 +654,7 @@ function rebuildPool(){
   el.className='chip'; el.draggable=true; el.dataset.id=c.id; el.dataset.name=c.name;
   const on=stars.includes(c.id);
   el.innerHTML=`${companySwatch(c)}
-    <div><div class="cn">${c.name}</div>${brandTagsHTML(c)}</div>
+    <div><div class="cn" title="${c.name}">${c.name}</div>${brandTagsHTML(c)}</div>
     <div class="grip">⠿</div>
     <button class="star-btn ${on?'on':''}" data-id="${c.id}" title="ติดดาว">${on?'★':'☆'}</button>`;
   el.addEventListener('dragstart',e=>{e.dataTransfer.setData('id',c.id);el.classList.add('dragging')});
@@ -785,7 +786,7 @@ function renderCmp(){
       denomNote='เทียบเฉพาะที่เลือก';
     }
     const note=usingCmp?' · ในแต่ละปี':'';
-    html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catdot" style="background:#22D3EE"></span>ส่วนแบ่งการตลาด (${denomNote}${note} · อิงรายได้หลัก)</td></tr>`;
+    html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catlabel"><span class="catdot" style="background:#22D3EE"></span>ส่วนแบ่งการตลาด (${denomNote}${note} · อิงรายได้หลัก)</span></td></tr>`;
     html+=`<tr><td>ส่วนแบ่งตามรายได้หลัก %</td>`;
     shares.forEach((v,i)=>{ html+= (v===null)?'<td><span class="val" style="opacity:.35">–</span></td>':`<td><span class="val ${isHi(v,i)?'best':''}">${fmt(v,1)}%</span></td>`; });
     html+='</tr>';
@@ -793,7 +794,7 @@ function renderCmp(){
   let lastCat=-1;
   RATIOS.forEach(r=>{
     if(r.cat!==lastCat){lastCat=r.cat;
-      html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catdot" style="background:${CATS[r.cat].color}"></span>${CATS[r.cat].name}</td></tr>`;}
+      html+=`<tr class="catrow"><td colspan="${cols.length+1}"><span class="catlabel"><span class="catdot" style="background:${CATS[r.cat].color}"></span>${CATS[r.cat].name}</span></td></tr>`;}
     const vals=cols.map(c=>c.rec?r.f(c.rec):null);
     const present=vals.filter(v=>v!==null&&isFinite(v));
     const best=r.hi?Math.max(...present):Math.min(...present);
