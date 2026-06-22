@@ -154,11 +154,11 @@ table.stmt.stmt-multi thead tr:last-child th .conm2-w{align-items:flex-end}
 .cmpwrap{scrollbar-width:thin;scrollbar-color:var(--line2) var(--bg2)}
 table.cmp{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}
 table.cmp th,table.cmp td{padding:11px 13px;text-align:right;white-space:nowrap}
-table.cmp thead th{position:sticky;top:0;z-index:2;background:var(--card);font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
-.block-body table.cmp thead th{background:var(--card)}
-table.cmp thead th:first-child{text-align:left;left:0;z-index:5}
+table.cmp thead th{position:sticky;top:0;z-index:10;background:var(--card);font-size:12px;font-weight:600;color:var(--tx);border-bottom:1px solid var(--line2)}
+.block-body table.cmp thead th{background:var(--card);box-shadow:0 3px 8px rgba(0,0,0,.45)}
+table.cmp thead th:first-child{text-align:left;left:0;z-index:12}
 table.cmp td:first-child,table.cmp th:first-child{text-align:left;color:var(--tx2);font-weight:400;position:sticky;left:0;background:var(--card)}
-table.cmp tbody td:first-child{z-index:3}
+table.cmp tbody td:first-child{z-index:4}
 table.cmp tbody tr:hover td:first-child{background:var(--card2)}
 table.cmp tbody tr{border-bottom:1px solid var(--line)}
 table.cmp tbody tr:hover{background:rgba(255,255,255,.02)}
@@ -372,6 +372,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
         <div class="toolbar">
           <div class="ptitle" style="margin:0"><span class="dot"></span>โซนเปรียบเทียบ</div>
           <div style="display:flex;gap:8px;align-items:center">
+            <button class="expbtn" id="cmpSort" title="เรียงคอลัมน์บริษัทที่เลือก ตามเกณฑ์ใน Ranking · ดีสุดอยู่ซ้าย">↕ เรียงอันดับ</button>
             <button class="expbtn" id="cmpExp" title="ดูเต็มจอ">⤢ ขยาย</button>
             <button class="clr" id="clrBtn">ล้างทั้งหมด</button>
           </div>
@@ -845,6 +846,19 @@ const rankSel=document.getElementById('rankSel');
  });}
 rankSel.value=0; rankSel.onchange=()=>{rankLimit=10;renderRank();};
 let rankLimit=10;
+/* ปุ่มเรียงคอลัมน์บริษัทที่เลือกตามเกณฑ์ใน Ranking (ดีสุดอยู่ซ้าย) */
+document.getElementById('cmpSort').onclick=()=>{
+  if(selected.length<2){alert('เลือกบริษัทอย่างน้อย 2 บริษัทก่อน');return;}
+  const r=RATIOS[+rankSel.value];
+  const yrs=cmpYears.length?cmpYears:[curYear];
+  const scored=selected.map(id=>({id,v:rankAvg(id,r,yrs)}));
+  scored.sort((a,b)=>{
+    if(a.v==null)return 1; if(b.v==null)return -1;
+    return r.hi?b.v-a.v:a.v-b.v;
+  });
+  selected=scored.map(s=>s.id);
+  render();
+};
 const RANK_MINREV=10e6;   // ตัดบริษัทที่รายได้เฉลี่ย < 10 ลบ. ออก (กันอัตราส่วนเพี้ยนจากบริษัทที่แทบไม่มีรายได้)
 function rankAvg(coId,r,yrs){
   const vals=[];
