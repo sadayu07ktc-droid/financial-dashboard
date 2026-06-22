@@ -90,6 +90,14 @@ body{
 .modal-card.big{width:min(1480px,97vw);height:min(900px,94vh)}
 .block-body{overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
 .block-body::-webkit-scrollbar{display:none}
+/* จอขยายตารางเปรียบเทียบ: พอดีความกว้าง ไม่ต้องเลื่อนแนวนอน */
+.block-body .cmpwrap{min-width:0;overflow:visible}
+.block-body table.cmp{width:100%;min-width:0;table-layout:fixed;font-size:12px}
+.block-body table.cmp th,.block-body table.cmp td{white-space:normal;padding:9px 8px;word-break:break-word}
+.block-body table.cmp th:first-child,.block-body table.cmp td:first-child{width:21%}
+.block-body .colhd1.v,.block-body .colhd2,.block-body .colhd1{width:100%}
+.block-body table.cmp .val{white-space:nowrap;font-size:12px}
+.block-body table.cmp .best{padding:3px 7px}
 .modal-hint{margin-left:auto;margin-right:10px;font-size:11.5px;color:var(--tx3);white-space:nowrap}
 @media(max-width:600px){.modal-hint{display:none}}
 .block-inner{min-width:max-content}
