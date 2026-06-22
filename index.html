@@ -88,7 +88,10 @@ body{
 .expbtn{background:var(--card2);border:1px solid var(--line2);color:var(--tx2);border-radius:10px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .expbtn:hover{border-color:var(--acc);color:var(--acc)}
 .modal-card.big{width:min(1480px,97vw);height:min(900px,94vh)}
-.block-body{overflow:auto}
+.block-body{overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
+.block-body::-webkit-scrollbar{display:none}
+.modal-hint{margin-left:auto;margin-right:10px;font-size:11.5px;color:var(--tx3);white-space:nowrap}
+@media(max-width:600px){.modal-hint{display:none}}
 .block-inner{min-width:max-content}
 .block-body .cmpwrap{overflow:visible}
 .block-body table.cmp{font-size:13.5px}
@@ -314,7 +317,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
       <div class="logo">฿</div>
       <div>
         <h1>เปรียบเทียบงบการเงิน</h1>
-        <p>ลากการ์ดบริษัทมาวางเพื่อเทียบ · 74 บริษัท กลุ่มน้ำมันพืช/ปาล์ม</p>
+        <p>ลากการ์ดบริษัทมาวางเพื่อเทียบ · <span id="coCount">–</span> บริษัท กลุ่มน้ำมันพืช/ปาล์ม</p>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -473,6 +476,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
   <div class="modal-card big">
     <div class="modal-head">
       <span id="blockTitle" class="modal-title"></span>
+      <span class="modal-hint">✋ ลากเพื่อเลื่อน · Esc ปิด</span>
       <button class="modal-x" id="blockX">×</button>
     </div>
     <div class="modal-body block-body" id="blockBody"></div>
@@ -491,6 +495,7 @@ function reindex(){
   COIDS=[...new Set(ALLDATA.map(r=>r.id))];
   COLOR={}; COIDS.forEach((id,i)=>COLOR[id]=PALETTE[i%PALETTE.length]);
   if(!curYear||!YEARS.includes(curYear)) curYear=YEARS[0];
+  const cc=document.getElementById('coCount'); if(cc)cc.textContent=COIDS.length;
 }
 function buildFull(){FULL=ALLDATA.filter(r=>r.year===curYear).map(r=>Object.assign({},r,{color:COLOR[r.id]}));}
 reindex(); buildFull();
