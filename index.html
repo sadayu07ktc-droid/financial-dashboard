@@ -232,6 +232,8 @@ select.sel:focus{border-color:var(--acc)}
 .dsrc{font-size:11.5px;color:var(--tx2);display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 12px}
 .dsrc .d{width:7px;height:7px;border-radius:50%;background:var(--tx3);transition:.2s}
 .dsrc.ok .d{background:var(--acc)} .dsrc.warn .d{background:var(--warn)} .dsrc.load .d{background:var(--acc2);animation:pulse 1s infinite}
+.dsrc.bad{border-color:rgba(242,97,140,.45);color:var(--bad)} .dsrc.bad .d{background:var(--bad);animation:pulse 1.4s infinite}
+.dsrc.warn{border-color:rgba(245,183,61,.4)} .dsrc.bad:hover,.dsrc.warn:hover{border-color:var(--acc)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .yearbar{display:flex;flex-wrap:wrap;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:20px}.yb-col{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px}
 .yb-label{font-size:12px;color:var(--tx2);font-weight:600}
@@ -501,6 +503,12 @@ function reindex(){
   const cc=document.getElementById('coCount'); if(cc)cc.textContent=COIDS.length;
 }
 function buildFull(){FULL=ALLDATA.filter(r=>r.year===curYear).map(r=>Object.assign({},r,{color:COLOR[r.id]}));}
+/* ใช้ข้อมูลชีตที่แคชไว้ครั้งล่าสุด (ถ้ามี) ตั้งแต่เฟรมแรก แทนข้อมูลฝังในไฟล์ซึ่งเก่าลงเรื่อยๆ */
+let BOOT_FROM_CACHE=0;
+try{
+  const _c=JSON.parse(localStorage.getItem('dbdCacheMain')||'null');
+  if(_c&&Array.isArray(_c.d)&&_c.d.length){ ALLDATA=_c.d; BOOT_FROM_CACHE=_c.t||0; }
+}catch(e){}
 reindex(); buildFull();
 
 /* ===== Google Sheet (CSV) — ทางที่ 2 =====
@@ -565,8 +573,14 @@ async function loadGroups(){
         else if(LOGOH.some(h=>nk.includes(h)))COLOGO[idk]=_norm(val);
       }
     });
+    cacheSave(CACHE_GROUP,{g:GROUPSHEET,l:COLOGO});
     rebuildGroups();
-  }catch(e){ console.error('Group sheet load failed:',e); rebuildGroups(); }
+  }catch(e){
+    console.error('Group sheet load failed:',e);
+    const c=cacheLoad(CACHE_GROUP);              // ใช้กลุ่ม/แบรนด์/โลโก้ ที่ดึงได้ครั้งล่าสุด
+    if(c&&c.d){ GROUPSHEET=c.d.g||[]; COLOGO=c.d.l||{}; }
+    rebuildGroups();
+  }
 }
 function _cleanName(s){s=_norm(s).replace('ชื่อนิติบุคคล :','').trim();s=s.replace(/^บริษัท\s*/,'').replace(/\s*จำกัด\s*\(มหาชน\)\s*$/,'').replace(/\s*จำกัด\s*$/,'');return s.trim();}
 function _toNum(s){s=_norm(s).replace(/,/g,'');if(s===''||s==='-')return 0;const v=parseFloat(s);return isNaN(v)?0:v;}
@@ -579,7 +593,26 @@ function normalizeSheetUrl(u){
   return u;
 }
 function mapSheetRows(rows){const out=[];for(const row of rows){const keys={};for(const k in row)keys[_norm(k)]=k;const g=th=>row[keys[th]];const rec={id:_norm(g(TH.reg)),name:_cleanName(g(TH.name)),year:_norm(g(TH.year))};for(const f of NUMF)rec[f]=_toNum(g(TH[f]));const gk=Object.keys(keys).find(k=>/กลุ่ม|ประเภทธุรกิจ|business|^group$/i.test(k));if(gk)rec.grp=_norm(row[keys[gk]]);if(!rec.id||!rec.year)continue;if(!rec.assets&&!rec.rev)continue;out.push(rec);}return out;}
-function setBadge(state,detail){const el=document.getElementById('dataSrc');if(!el)return;const m={builtin:['','ข้อมูลในไฟล์'],load:['load','กำลังโหลดจากชีต…'],sheet:['ok','เชื่อมต่อ Google Sheet'],error:['warn','โหลดชีตไม่ได้ — แตะเพื่อลองใหม่']};const a=m[state]||m.builtin;el.className='dsrc '+a[0];el.innerHTML='<span class="d"></span>'+a[1];el.style.cursor=(state==='error')?'pointer':'';el.onclick=(state==='error')?(()=>{loadSheet();loadGroups();}):null;el.title=(state==='error'&&detail)?('สาเหตุ: '+detail):'';}
+/* วันที่ของชุดข้อมูลที่ฝังไว้ในไฟล์ — อัปเดตทุกครั้งที่ commit ข้อมูลชุดใหม่ */
+const EMBED_DATE='22 มิ.ย. 2569';
+const _p2=v=>String(v).padStart(2,'0');
+function _tsTxt(ts){if(!ts)return '';const d=new Date(ts);return _p2(d.getDate())+'/'+_p2(d.getMonth()+1)+' '+_p2(d.getHours())+':'+_p2(d.getMinutes());}
+function setBadge(state,detail){
+  const el=document.getElementById('dataSrc');if(!el)return;
+  const m={
+    builtin:['warn','ข้อมูลในไฟล์ · ณ '+EMBED_DATE],
+    load  :['load','กำลังโหลดจากชีต…'],
+    sheet :['ok','เชื่อมต่อ Google Sheet'+(detail?' · '+detail:'')],
+    cache :['warn','โหลดชีตไม่ได้ · ใช้ข้อมูลที่แคชไว้'+(detail?' '+detail:'')+' — แตะเพื่อลองใหม่'],
+    error :['bad','โหลดชีตไม่ได้ · ใช้ข้อมูลในไฟล์ ณ '+EMBED_DATE+' — แตะเพื่อลองใหม่']
+  };
+  const a=m[state]||m.builtin, clickable=(state==='error'||state==='cache'||state==='builtin');
+  el.className='dsrc '+a[0];
+  el.innerHTML='<span class="d"></span>'+a[1];
+  el.style.cursor=clickable?'pointer':'';
+  el.onclick=clickable?(()=>{loadSheet();loadGroups();}):null;
+  el.title=(state==='error'&&detail)?('สาเหตุ: '+detail):(clickable?'แตะเพื่อดึงข้อมูลจาก Google Sheet ใหม่':'');
+}
 
 /* หมวดหมู่อัตราส่วน (ตามแบบ DBD) */
 const CATS=[
@@ -1274,6 +1307,23 @@ function renderYearDZ(){
 }
 function fillYearSel(){ cmpYears=cmpYears.filter(y=>YEARS.includes(y)); renderYearChips(); renderYearDZ(); }
 fillYearSel();
+/* ===== แคชชีตล่าสุดไว้ใน localStorage =====
+   เพื่อว่าถ้าดึงชีตไม่ได้ จะได้ตกไปใช้ข้อมูล "ครั้งล่าสุดที่ดึงสำเร็จ"
+   แทนที่จะย้อนไปใช้ชุดที่ฝังในไฟล์ซึ่งเก่าลงทุกวัน */
+const CACHE_MAIN='dbdCacheMain', CACHE_GROUP='dbdCacheGroup';
+function cacheSave(key,payload){ safeStore.set(key,JSON.stringify({t:Date.now(),d:payload})); }
+function cacheLoad(key){
+  try{ const raw=safeStore.get(key); if(!raw)return null; const o=JSON.parse(raw); return (o&&o.d)?o:null; }
+  catch(e){ return null; }
+}
+
+/* ===== ตัวกลาง (proxy) สำรอง — กันกรณี CORS พังพร้อมกับ proxy ตัวใดตัวหนึ่งล่ม ===== */
+const CSV_ROUTES=[
+  u=>u,                                                           // 1) ยิงตรงไป Google
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),  // 2) allorigins
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),           // 3) corsproxy.io
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u) // 4) codetabs
+];
 async function _tryFetch(u){const res=await fetch(u,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);const t=await res.text();if(!t||/<!DOCTYPE html>/i.test(t.slice(0,200)))throw new Error('ไม่ใช่ CSV (อาจยังไม่ได้ Publish)');return t;}
 async function _fetchCsv(rawUrl,tries){
   const base=normalizeSheetUrl(rawUrl);
@@ -1281,17 +1331,23 @@ async function _fetchCsv(rawUrl,tries){
   let lastErr;
   for(let i=0;i<(tries||2);i++){
     const u=bust();
-    try{ return await _tryFetch(u); }                                   // 1) ดึงตรง
-    catch(e){ lastErr=e; }
-    try{ return await _tryFetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u)); } // 2) ผ่าน proxy (กัน CORS/file://)
-    catch(e){ lastErr=e; }
+    for(const via of CSV_ROUTES){                                  // ไล่ทีละเส้นทางจนกว่าจะได้ CSV
+      try{ return await _tryFetch(via(u)); }
+      catch(e){ lastErr=e; }
+    }
     await new Promise(r=>setTimeout(r,1000));
   }
   throw lastErr||new Error('fetch failed');
 }
+let _retryTimer=null, _retryLeft=4;
+function _scheduleRetry(){                       // ลองใหม่เองเงียบๆ สูงสุด 4 ครั้ง (20s, 40s, 60s, 80s)
+  if(_retryTimer||_retryLeft<=0)return;
+  const wait=20000*(5-_retryLeft); _retryLeft--;
+  _retryTimer=setTimeout(()=>{_retryTimer=null;loadSheet();loadGroups();},wait);
+}
 async function loadSheet(){
   if(!SHEET_CSV_URL){setBadge('builtin');return;}
-  if(typeof Papa==='undefined'){setBadge('error');return;}
+  if(typeof Papa==='undefined'){setBadge('error','ไม่พบไลบรารี PapaParse');return;}
   setBadge('load');
   let rows;
   try{
@@ -1299,14 +1355,22 @@ async function loadSheet(){
     const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
     rows=mapSheetRows(parsed.data||[]);
     if(!rows.length) throw new Error('no usable rows');
-  }catch(e){console.error('Sheet load failed:',e); setBadge('error',e&&e.message); return;}
+  }catch(e){
+    console.error('Sheet load failed:',e);
+    const c=cacheLoad(CACHE_MAIN);               // มีแคชไหม (boot ก็ใส่ ALLDATA ไปแล้ว)
+    setBadge(c?'cache':'error', c?_tsTxt(c.t):(e&&e.message));
+    _scheduleRetry();
+    return;
+  }
   // ----- โหลดสำเร็จแล้ว: ใส่ข้อมูล + วาด (error ตอนวาดไม่ทำให้ badge เป็นโหลดไม่ได้) -----
   ALLDATA.length=0; rows.forEach(r=>ALLDATA.push(r));
   reindex(); fillYearSel(); buildFull();
   selected=selected.filter(id=>FULL.some(c=>c.id===id));
   if(donutA&&!FULL.some(c=>c.id===donutA))donutA=FULL[0]?FULL[0].id:null;
   if(donutB&&!FULL.some(c=>c.id===donutB))donutB=FULL[0]?FULL[0].id:null;
-  setBadge('sheet');
+  if(_retryTimer){clearTimeout(_retryTimer);_retryTimer=null;} _retryLeft=4;
+  cacheSave(CACHE_MAIN,rows);                    // เก็บไว้ใช้ตอนออฟไลน์/ชีตล่ม
+  setBadge('sheet',_tsTxt(Date.now()));
   try{
     rebuildPool(); doSearch();
     render(); renderRank(); drawAsset(); drawFund();
@@ -1461,7 +1525,9 @@ stmtCos = selected.length ? [...selected] : (stmtCompanies()[0]?[stmtCompanies()
 setupCombo('stmtSearchBS','stmtListBS'); setupCombo('stmtSearchPL','stmtListPL');
 renderStmtPickers(); renderStatements();
 render(); renderRank(); drawAsset(); drawFund();
+(function(){ const c=cacheLoad(CACHE_GROUP); if(c&&c.d){ GROUPSHEET=c.d.g||[]; COLOGO=c.d.l||{}; } })();
 rebuildGroups(); loadGroups();
+if(BOOT_FROM_CACHE) setBadge('cache',_tsTxt(BOOT_FROM_CACHE));   // แสดงที่มาข้อมูลระหว่างรอชีต
 loadSheet();</script>
 </body>
 </html>
