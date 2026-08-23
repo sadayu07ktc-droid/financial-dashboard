@@ -605,8 +605,8 @@ const RATIOS=[
  {cat:2,n:11,label:"ค่าใช้จ่ายการดำเนินงานต่อรายได้รวม %",f:c=>c.exp/c.rev*100,suf:"%",dec:1,hi:false},
  /* 4) โครงสร้างงบแสดงฐานะการเงิน */
  {cat:3,n:12,label:"สินทรัพย์รวมต่อส่วนของผู้ถือหุ้น (เท่า)",f:c=>c.assets/c.eq,suf:"x",dec:2,hi:false},
- {cat:3,n:13,label:"หนี้สินต่อส่วนของผู้ถือหุ้น (เท่า) < 2.5",f:c=>c.liab/c.eq,suf:"x",dec:2,hi:false},
- {cat:3,n:14,label:"หนี้สินรวมต่อส่วนของผู้ถือหุ้น D/E (เท่า)",f:c=>c.liab/c.eq,suf:"x",dec:2,hi:false},
+ {cat:3,n:13,label:"หนี้สินรวมต่อส่วนของผู้ถือหุ้น D/E (เท่า) < 2.5",f:c=>c.liab/c.eq,suf:"x",dec:2,hi:false},
+ {cat:3,n:14,label:"หนี้สินรวมต่อสินทรัพย์รวม %",f:c=>c.liab/c.assets*100,suf:"%",dec:1,hi:false},
  /* 5) ระยะเวลาหมุนเวียน (วัน) */
  {cat:4,n:7, label:"การหมุนเวียนของลูกหนี้ (วัน)",f:c=>c.recv/c.rev*365,suf:" วัน",dec:0,hi:false},
  {cat:4,n:8, label:"การหมุนเวียนของสินค้าคงเหลือ (วัน)",f:c=>c.inv/c.cogs*365,suf:" วัน",dec:0,hi:false},
