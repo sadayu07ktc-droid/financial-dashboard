@@ -451,6 +451,9 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 
 /* ============ กราฟแนวโน้ม (SVG ล้วน ไม่ใช้ lib) ============ */
 .trend{width:100%;min-width:0}
+.tr-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.tr-bl{font-size:12.5px;font-weight:600;color:var(--tx2);flex:none}
+.tr-bar .sel{flex:1;min-width:220px;max-width:460px;font-weight:600}
 .tr-sub{font-size:12.5px;color:var(--tx2);margin-bottom:14px;padding:9px 13px;background:var(--card2);
   border:1px solid var(--line);border-radius:10px;line-height:1.6}
 .tr-sub b{color:var(--acc)}
@@ -717,7 +720,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-08-23 · 3';
+const BUILD='2569-08-23 · 4';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1343,7 +1346,11 @@ function drawTrend(){
     const sw=document.querySelector('.tr-lg[data-k="__GRP__"] i');
     if(sw)sw.style.background=series[0].c;
   }
-  const W=720,H=300,pad={l:56,r:16,t:16,b:30};
+  /* viewBox = ขนาดจริงของกล่อง 1:1 ไม่งั้นภาพถูกยืดออกข้าง จุดกลมกลายเป็นวงรี */
+  const rcw=svg.parentElement.getBoundingClientRect();
+  const W=Math.max(200,Math.round(rcw.width)||720), H=Math.max(170,Math.round(rcw.height)||300);
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  const pad={l:W<430?44:58,r:W<430?12:18,t:16,b:30};   /* จอแคบย่อขอบแกน Y ให้เหลือพื้นที่วาดมากขึ้น */
   const on=series.filter(s=>_trVis[s.key]!==false);
   const flat=on.flatMap(s=>s.data).filter(v=>v!=null);
   if(!flat.length){svg.innerHTML='';return;}
@@ -1437,38 +1444,58 @@ function trPickRow(i){                                           /* คลิก
   tr.classList.add('hl');
   tr.scrollIntoView({block:'nearest',behavior:'smooth'});
 }
-function openTrend(){
+let _trRO=null;
+function trendRefresh(){                                          /* คำนวณ+เติมเนื้อใหม่ ตามหัวข้อปัจจุบัน */
   const r=RATIOS[+rankSel.value];
   const {yrs,series}=trendData(r);
-  if(!yrs.length){toast('ยังไม่มีข้อมูลรายปีพอจะวาดกราฟ','warn');return;}
   series.forEach(s=>{if(_trVis[s.key]===undefined)_trVis[s.key]=true;});
   _trState={yrs,series,r,pts:{}};
   const metric=rankSel.options[rankSel.selectedIndex]?rankSel.options[rankSel.selectedIndex].text:'';
   const isSum=(r.cat===5);
   const g=series[0].data, first=g.find(v=>v!=null), last=[...g].reverse().find(v=>v!=null);
   const chg=(first!=null&&last!=null&&first!==0)?((last-first)/Math.abs(first)*100):null;
-  const chgTx=chg==null?'':(' · '+(chg>=0?'▲ +':'▼ ')+fmt(chg,1)+'% จากปี '+yrs[0]+' ถึง '+yrs[yrs.length-1]);
+  const chgTx=chg==null?'':((chg>=0?'▲ +':'▼ ')+fmt(chg,1)+'% จากปี '+yrs[0]+' ถึง '+yrs[yrs.length-1]);
   const note=isSum?'ยอดรวม = ผลบวกทั้ง '+(series.length-1)+' บริษัท (ไม่ได้ตัดรายการระหว่างกัน)'
                   :'ยอดรวม = คำนวณจากงบรวมของเครือ ไม่ใช่ค่าเฉลี่ยของอัตราส่วนรายบริษัท';
-  const leg=series.map(s=>'<span class="tr-lg'+(_trVis[s.key]===false?' off':'')+'" data-k="'+s.key+'">'
-      +'<i style="background:'+s.c+'"></i>'+s.nm+'</span>').join('');
-  const head='<tr><th>ปี</th>'+series.map(s=>'<th>'+s.nm+'</th>').join('')+'</tr>';
-  const rows=[...yrs].reverse().map(y=>{                          /* ตารางเรียงใหม่→เก่า */
+  document.getElementById('blockTitle').textContent='แนวโน้มเครือสุขสมบูรณ์: '+metric;
+  document.getElementById('trSub').innerHTML=(chgTx?'<b>'+chgTx+'</b> · ':'')+note;
+  document.getElementById('trLeg').innerHTML=series.map(s=>
+    '<span class="tr-lg'+(_trVis[s.key]===false?' off':'')+'" data-k="'+s.key+'">'
+    +'<i style="background:'+s.c+'"></i>'+s.nm+'</span>').join('');
+  document.getElementById('trHead').innerHTML='<tr><th>ปี</th>'+series.map(s=>'<th>'+s.nm+'</th>').join('')+'</tr>';
+  document.getElementById('trRows').innerHTML=[...yrs].reverse().map(y=>{   /* ตารางเรียงใหม่→เก่า */
     const i=yrs.indexOf(y);
     return '<tr><td>'+y+'</td>'+series.map(s=>{const v=s.data[i];
       return '<td'+(s.main?' class="gv"':'')+'>'+(v==null?'–':fmt(v,r.dec)+r.suf)+'</td>';}).join('')+'</tr>';
   }).join('');
-  openBlock('แนวโน้มเครือสุขสมบูรณ์: '+metric,
+  drawTrend(); wireTrendHover();
+}
+function openTrend(){
+  if(!YEARS.length){toast('ยังไม่มีข้อมูลรายปีพอจะวาดกราฟ','warn');return;}
+  /* ตัวเลือกหัวข้อในหน้ากราฟ — โคลนรายการเดียวกับ dropdown ของ Ranking */
+  let opts='',curCat=-1;
+  RATIOS.forEach((r,i)=>{
+    if(r.cat!==curCat){if(curCat>=0)opts+='</optgroup>';curCat=r.cat;opts+='<optgroup label="'+CATS[r.cat].name+'">';}
+    opts+='<option value="'+i+'"'+(i===+rankSel.value?' selected':'')+'>'+r.label+'</option>';
+  });
+  if(curCat>=0)opts+='</optgroup>';
+  openBlock('แนวโน้มเครือสุขสมบูรณ์',
     '<div class="trend">'
-    +'<div class="tr-sub">เกณฑ์ <b>'+metric+'</b>'+chgTx+'<br>'+note+'</div>'
-    +'<div class="tr-leg" id="trLeg">'+leg+'</div>'
-    +'<div class="tr-chart" id="trWrap"><svg id="trSvg" viewBox="0 0 720 300" preserveAspectRatio="none"></svg>'
+    +'<div class="tr-bar"><span class="tr-bl">ดูเรื่อง</span>'
+    +'<select class="sel" id="trSel">'+opts+'</select></div>'
+    +'<div class="tr-sub" id="trSub"></div>'
+    +'<div class="tr-leg" id="trLeg"></div>'
+    +'<div class="tr-chart" id="trWrap"><svg id="trSvg" preserveAspectRatio="none"></svg>'
     +'<div class="tr-cross" id="trCross"></div><div class="tr-tip" id="trTip"></div></div>'
-    +'<div class="tr-tblwrap"><table class="tr-tbl"><thead>'+head+'</thead><tbody id="trRows">'+rows+'</tbody></table></div>'
+    +'<div class="tr-tblwrap"><table class="tr-tbl"><thead id="trHead"></thead><tbody id="trRows"></tbody></table></div>'
     +'</div>');
   const bi=document.getElementById('blockBody').firstElementChild;
   if(bi){bi.style.minWidth='0';bi.style.width='100%';}
-  drawTrend(); wireTrendHover();
+  trendRefresh();
+  /* เปลี่ยนหัวข้อในหน้ากราฟ — ให้ dropdown ของ Ranking ตามไปด้วย จะได้ไม่ขัดกัน */
+  document.getElementById('trSel').onchange=e=>{
+    rankSel.value=e.target.value; rankLimit=10; renderRank(); trendRefresh();
+  };
   document.getElementById('trLeg').onclick=e=>{
     const el=e.target.closest('.tr-lg'); if(!el)return;
     const k=el.dataset.k;
@@ -1478,6 +1505,31 @@ function openTrend(){
     el.classList.toggle('off',_trVis[k]===false);
     drawTrend(); wireTrendHover();
   };
+  /* กล่องเปลี่ยนขนาด (ย่อ-ขยายจอ/หมุนเครื่อง) ต้องวาดใหม่ เพราะ viewBox ผูกกับขนาดจริง */
+  if(_trRO)_trRO.disconnect();
+  if(window.ResizeObserver){
+    let t=0;                                     /* ใช้ setTimeout ไม่ใช่ rAF — rAF ไม่ทำงานตอนแท็บถูกซ่อน */
+    _trRO=new ResizeObserver(()=>{
+      if(!document.getElementById('trSvg')){_trRO.disconnect();_trRO=null;return;}
+      clearTimeout(t);
+      t=setTimeout(()=>{ if(document.getElementById('trSvg')){drawTrend();wireTrendHover();} },60);
+    });
+    _trRO.observe(document.getElementById('trWrap'));
+  }
+  window.addEventListener('resize',trOnResize);
+  window.addEventListener('orientationchange',trOnResize);
+}
+let _trRT=0;
+function trOnResize(){                            /* ทางสำรองของ ResizeObserver — ครอบคลุมย่อจอ/หมุนเครื่อง */
+  clearTimeout(_trRT);
+  _trRT=setTimeout(()=>{
+    if(!document.getElementById('trSvg')){
+      window.removeEventListener('resize',trOnResize);
+      window.removeEventListener('orientationchange',trOnResize);
+      return;
+    }
+    drawTrend(); wireTrendHover();
+  },80);
 }
 
 function renderRank(){
