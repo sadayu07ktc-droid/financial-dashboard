@@ -422,6 +422,9 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 .skwrap .ldr{position:absolute;inset:0;justify-content:center;padding:0;z-index:2}
 .skwrap .ldr-tx{background:var(--card);padding:3px 12px;border-radius:20px}
 
+.qchip.grp-own{background:var(--acctint);border-color:var(--acc);color:var(--acc);font-weight:700}
+.qchip.grp-own:hover{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+
 /* ============ การ์ดรวมยอดเครือ (มุมขวาของหัวข้อจัดอันดับ) ============ */
 .grpsum{margin-left:auto;display:flex;align-items:center;gap:10px;background:var(--card2);
   border:1px solid var(--line2);border-radius:12px;padding:8px 13px;font-size:12.5px;transition:.15s}
@@ -445,6 +448,44 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
   border-top:1px solid var(--line2);color:var(--tx);font-weight:600}
 .gstip .gt-t b{font-family:'Space Grotesk';font-weight:700;color:var(--acc);font-size:14.5px}
 .gstip .gt-n{font-size:10.5px;color:var(--tx3);margin-top:9px;line-height:1.5}
+
+/* ============ กราฟแนวโน้ม (SVG ล้วน ไม่ใช้ lib) ============ */
+.trend{width:100%;min-width:0}
+.tr-sub{font-size:12.5px;color:var(--tx2);margin-bottom:14px;padding:9px 13px;background:var(--card2);
+  border:1px solid var(--line);border-radius:10px;line-height:1.6}
+.tr-sub b{color:var(--acc)}
+.tr-chart{position:relative;height:326px;margin-bottom:12px;touch-action:pan-y}
+.tr-chart svg{width:100%;height:100%;display:block;overflow:visible}
+.tr-cross{position:absolute;top:0;bottom:0;width:1px;background:var(--line2);opacity:0;pointer-events:none}
+.tr-dot{position:absolute;width:11px;height:11px;border-radius:50%;border:2px solid var(--card);
+  opacity:0;transform:translate(-50%,-50%);pointer-events:none}
+.tr-tip{position:absolute;background:var(--card);border:1px solid var(--line2);border-radius:11px;
+  padding:9px 12px;font-size:12px;opacity:0;transform:translate(-50%,-112%);white-space:nowrap;
+  pointer-events:none;box-shadow:0 14px 34px var(--shadow2);z-index:3}
+.tr-tip .tt-y{font-family:'Space Grotesk';font-weight:700;font-size:13px;color:var(--tx);margin-bottom:6px}
+.tr-tip .tt-r{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:2px 0;color:var(--tx2)}
+.tr-tip .tt-r i{width:8px;height:8px;border-radius:2px;flex:none;display:inline-block}
+.tr-tip .tt-r b{font-family:'Space Grotesk';font-weight:600;color:var(--tx);margin-left:10px}
+.tr-leg{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.tr-lg{display:inline-flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--line2);
+  border-radius:9px;padding:6px 11px;font-size:12px;font-weight:500;color:var(--tx2);cursor:pointer;
+  transition:.15s;user-select:none}
+.tr-lg:hover{border-color:var(--acc);color:var(--tx)}
+.tr-lg i{width:11px;height:11px;border-radius:3px;flex:none}
+.tr-lg.off{opacity:.4}
+.tr-lg.off i{background:var(--tx3)!important}
+.tr-tblwrap{overflow:auto;max-height:260px;border:1px solid var(--line);border-radius:12px}
+table.tr-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tr-tbl th,table.tr-tbl td{padding:9px 12px;text-align:right;white-space:nowrap}
+table.tr-tbl thead th{position:sticky;top:0;z-index:2;background:var(--bg2);font-size:11.5px;font-weight:600;
+  color:var(--tx);border-bottom:1px solid var(--line2)}
+table.tr-tbl th:first-child,table.tr-tbl td:first-child{text-align:left;font-family:'Space Grotesk';font-weight:600}
+table.tr-tbl tbody tr{border-bottom:1px solid var(--line)}
+table.tr-tbl tbody td{color:var(--tx2);font-family:'Space Grotesk'}
+table.tr-tbl tbody td.gv{color:var(--acc);font-weight:700}
+table.tr-tbl tbody tr:hover td{background:var(--rowhov)}
+table.tr-tbl tbody tr.hl td{background:var(--acctint);color:var(--tx)}
+table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 
 /* ===================== ป้าย build ===================== */
 .bld{text-align:center;font-size:11px;color:var(--tx3);margin-top:34px;cursor:pointer;user-select:none}
@@ -526,6 +567,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
         <button class="qchip" id="qAll">ทั้งหมด</button>
         <button class="qchip" id="qTop">Top 10 กำไรสุทธิ</button>
         <button class="qchip star" id="qStar">★ ติดดาว</button>
+        <button class="qchip grp-own" id="qGrp" title="เลือกบริษัทในเครือสุขสมบูรณ์ทั้งหมด">ในเครือ</button>
         <span id="groupChips" style="display:contents"></span>
         <button class="qchip clear" id="qClear">ล้าง</button>
       </div>
@@ -675,7 +717,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-08-23 · 2';
+const BUILD='2569-08-23 · 3';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -994,6 +1036,16 @@ document.getElementById('qTop').onclick=()=>{
   selected=[...FULL].sort((a,b)=>b.np-a.np).slice(0,10).map(c=>c.id);
   render();
 };
+document.getElementById('qGrp').onclick=()=>{        /* เลือกบริษัทในเครือทั้งหมด (เรียง พืช ปาล์ม สกล บ่อไร่) */
+  brandActive=false;
+  const ids=grpIds().filter(id=>FULL.some(c=>c.id===id))
+    .map(id=>({id,s:grpShort(id,(ALLDATA.find(x=>x.id===id)||{}).name)}))
+    .sort((a,b)=>{const ia=GRP_ORDER.indexOf(a.s),ib=GRP_ORDER.indexOf(b.s);
+                  return (ia<0?99:ia)-(ib<0?99:ib);})
+    .map(o=>o.id);
+  if(!ids.length){toast('ยังไม่มีบริษัทในเครือในปีนี้','warn');return;}
+  selected=ids; render();
+};
 document.getElementById('qStar').onclick=()=>{
   if(stars.length===0){toast('ยังไม่มีบริษัทติดดาว — กดดาว ☆ บนการ์ดบริษัทก่อน','warn');return;}
   brandActive=false;
@@ -1249,9 +1301,182 @@ function renderGrpSum(r,yrs,all){
   };
   nm.onmouseenter=place; nm.onmousemove=place;
   nm.onmouseleave=()=>_gtip.classList.remove('show');
-  nm.onclick=e=>{                                            /* มือถือ: แตะเพื่อดู */
-    if(_gtip.classList.contains('show')){_gtip.classList.remove('show');return;}
-    place(e); setTimeout(()=>_gtip.classList.remove('show'),4500);
+  box.onclick=()=>{_gtip.classList.remove('show');openTrend();};   /* จิ้มการ์ด = กราฟแนวโน้ม */
+  box.style.cursor='pointer';
+  box.title='กดเพื่อดูกราฟแนวโน้มรายปี';
+}
+
+/* ============================================================
+   กราฟแนวโน้มรายปีของเครือ — SVG + vanilla JS ไม่มี lib
+   เส้นสมูทแบบ Catmull-Rom แปลงเป็น cubic bezier
+   ============================================================ */
+function _smooth(p){
+  if(p.length<2)return p.length?('M '+p[0].x.toFixed(1)+' '+p[0].y.toFixed(1)):'';
+  let d='M '+p[0].x.toFixed(1)+' '+p[0].y.toFixed(1);
+  for(let i=0;i<p.length-1;i++){
+    const a=p[i-1]||p[i],b=p[i],c=p[i+1],e=p[i+2]||c;
+    d+=' C '+(b.x+(c.x-a.x)/6).toFixed(1)+' '+(b.y+(c.y-a.y)/6).toFixed(1)
+      +' '+(c.x-(e.x-b.x)/6).toFixed(1)+' '+(c.y-(e.y-b.y)/6).toFixed(1)
+      +' '+c.x.toFixed(1)+' '+c.y.toFixed(1);
+  }
+  return d;
+}
+let _trVis={}, _trState=null;
+function trendData(r){
+  const yrs=[...YEARS].sort();                                  /* เก่า → ใหม่ */
+  const val=(rec)=>{if(!rec)return null;const v=r.f(rec);return isFinite(v)?v:null;};
+  const out=[{key:'__GRP__',nm:'รวมทั้งเครือ',c:cssv('--acc'),w:3.2,main:true,
+    data:yrs.map(y=>{const c=grpConsolidated(y);return c?val(c):null;})}];
+  grpIds().map(id=>({id,s:grpShort(id,(ALLDATA.find(x=>x.id===id)||{}).name)}))
+    .sort((a,b)=>{const ia=GRP_ORDER.indexOf(a.s),ib=GRP_ORDER.indexOf(b.s);
+                  return (ia<0?99:ia)-(ib<0?99:ib);})
+    .forEach(o=>out.push({key:o.id,nm:o.s,c:COLOR[o.id]||'#8899bb',w:1.9,
+      data:yrs.map(y=>val(ALLDATA.find(x=>x.id===o.id&&x.year===y)))}));
+  return {yrs,series:out};
+}
+function drawTrend(){
+  const st=_trState; if(!st)return;
+  const {yrs,series,r}=st;
+  const svg=document.getElementById('trSvg'); if(!svg)return;
+  if(series[0]&&series[0].main){                            /* สีเส้นหลักตามธีมปัจจุบันเสมอ */
+    series[0].c=cssv('--acc');
+    const sw=document.querySelector('.tr-lg[data-k="__GRP__"] i');
+    if(sw)sw.style.background=series[0].c;
+  }
+  const W=720,H=300,pad={l:56,r:16,t:16,b:30};
+  const on=series.filter(s=>_trVis[s.key]!==false);
+  const flat=on.flatMap(s=>s.data).filter(v=>v!=null);
+  if(!flat.length){svg.innerHTML='';return;}
+  let lo=Math.min(...flat),hi=Math.max(...flat);
+  if(lo===hi){lo-=Math.abs(lo)*.1+1;hi+=Math.abs(hi)*.1+1;}
+  const padv=(hi-lo)*.12;
+  let min=lo-padv;
+  if(lo>=0&&min<0)min=0;                                   /* ค่าบวกล้วน อย่าให้แกนติดลบ */
+  const max=hi+padv;
+  const X=i=>pad.l+i*((W-pad.l-pad.r)/Math.max(1,yrs.length-1));
+  const Y=v=>pad.t+(1-(v-min)/(max-min))*(H-pad.t-pad.b);
+  const grid=[0,.25,.5,.75,1].map(g=>{
+    const y=pad.t+g*(H-pad.t-pad.b), v=max-g*(max-min);
+    return '<line x1="'+pad.l+'" y1="'+y.toFixed(1)+'" x2="'+(W-pad.r)+'" y2="'+y.toFixed(1)+'" stroke="'+cssv('--line')+'" stroke-width="1"/>'
+      +'<text x="'+(pad.l-9)+'" y="'+(y+3.5).toFixed(1)+'" fill="'+cssv('--tx3')+'" font-size="10" text-anchor="end" font-family="Space Grotesk">'+fmt(v,r.dec)+'</text>';
+  }).join('');
+  /* แกนปี — 5 จุดห่างกันพอ ไม่ต้องเอียงให้อ่านยาก */
+  const xax=yrs.map((y,i)=>{const x=X(i);
+    return '<line x1="'+x.toFixed(1)+'" y1="'+pad.t+'" x2="'+x.toFixed(1)+'" y2="'+(H-pad.b)+'" stroke="'+cssv('--line')+'" stroke-width="1" stroke-dasharray="2 4"/>'
+      +'<text x="'+x.toFixed(1)+'" y="'+(H-pad.b+16)+'" fill="'+cssv('--tx3')+'" font-size="11" text-anchor="middle" font-family="Space Grotesk">'+y+'</text>';
+  }).join('');
+  let defs='',body='';
+  st.pts={};
+  on.forEach(sr=>{
+    const pts=sr.data.map((v,i)=>v==null?null:{x:X(i),y:Y(v),i}).filter(Boolean);
+    st.pts[sr.key]=pts;
+    if(!pts.length)return;
+    const line=_smooth(pts);
+    if(sr.main){                                                 /* เส้นหลักมีพื้นไล่สี */
+      const gid='trg'+Math.random().toString(36).slice(2,8);
+      defs+='<linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1">'
+        +'<stop offset="0" stop-color="'+sr.c+'" stop-opacity=".28"/>'
+        +'<stop offset="1" stop-color="'+sr.c+'" stop-opacity="0"/></linearGradient>';
+      body+='<path d="'+line+' L '+pts[pts.length-1].x.toFixed(1)+' '+(H-pad.b)+' L '+pts[0].x.toFixed(1)+' '+(H-pad.b)+' Z" fill="url(#'+gid+')"/>';
+    }
+    body+='<path d="'+line+'" fill="none" stroke="'+sr.c+'" stroke-width="'+sr.w+'" stroke-linecap="round" stroke-linejoin="round"'+(sr.main?'':' stroke-opacity=".92"')+'/>';
+    pts.forEach(p=>{body+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(sr.main?4:3)+'" fill="'+sr.c+'"/>';});
+  });
+  svg.innerHTML='<defs>'+defs+'</defs>'+grid+xax+body;
+  st.X=X; st.W=W; st.H=H;
+  /* จุดตามเมาส์ ทำทีละเส้น */
+  const wrap=document.getElementById('trWrap');
+  wrap.querySelectorAll('.tr-dot').forEach(d=>d.remove());
+  on.forEach(sr=>{const d=document.createElement('div');d.className='tr-dot';d.dataset.k=sr.key;
+    d.style.background=sr.c;wrap.appendChild(d);});
+}
+function wireTrendHover(){
+  const st=_trState, wrap=document.getElementById('trWrap');
+  if(!st||!wrap)return;
+  const cross=document.getElementById('trCross'), tip=document.getElementById('trTip');
+  const idxAt=cx=>{const rc=wrap.getBoundingClientRect();
+    const rel=(cx-rc.left)/rc.width*st.W;
+    let best=0,bd=1e9;
+    st.yrs.forEach((y,i)=>{const d=Math.abs(st.X(i)-rel);if(d<bd){bd=d;best=i;}});
+    return best;};
+  const move=cx=>{
+    const rc=wrap.getBoundingClientRect(), i=idxAt(cx);
+    const px=st.X(i)/st.W*rc.width;
+    cross.style.left=px+'px'; cross.style.opacity='1';
+    let top=null, rows='';
+    wrap.querySelectorAll('.tr-dot').forEach(d=>{
+      const p=(st.pts[d.dataset.k]||[]).find(q=>q.i===i);
+      if(!p){d.style.opacity='0';return;}
+      const py=p.y/st.H*rc.height;
+      d.style.left=px+'px'; d.style.top=py+'px'; d.style.opacity='1';
+      if(top==null||py<top)top=py;
+    });
+    st.series.filter(s=>_trVis[s.key]!==false).forEach(sr=>{
+      const v=sr.data[i];
+      rows+='<div class="tt-r"><span><i style="background:'+sr.c+'"></i> '+sr.nm+'</span>'
+        +'<b>'+(v==null?'–':fmt(v,st.r.dec)+st.r.suf)+'</b></div>';
+    });
+    tip.innerHTML='<div class="tt-y">ปี '+st.yrs[i]+'</div>'+rows;
+    tip.style.left=Math.max(90,Math.min(rc.width-90,px))+'px';
+    tip.style.top=Math.max(10,(top==null?40:top))+'px';
+    tip.style.opacity='1';
+    return i;
+  };
+  wrap.onmousemove=e=>move(e.clientX);
+  wrap.onmouseleave=()=>{cross.style.opacity='0';tip.style.opacity='0';
+    wrap.querySelectorAll('.tr-dot').forEach(d=>d.style.opacity='0');};
+  wrap.ontouchmove=e=>{move(e.touches[0].clientX);e.preventDefault();};
+  wrap.onclick=e=>{const i=move(e.clientX);trPickRow(i);};
+  wrap.ontouchstart=e=>{const i=move(e.touches[0].clientX);trPickRow(i);};
+  wrap.style.cursor='pointer';
+}
+function trPickRow(i){                                           /* คลิกจุด → ตารางเลื่อนไปแถวนั้น */
+  const tb=document.getElementById('trRows'); if(!tb)return;
+  const tr=tb.children[_trState.yrs.length-1-i]; if(!tr)return;
+  [...tb.querySelectorAll('.hl')].forEach(x=>x.classList.remove('hl'));
+  tr.classList.add('hl');
+  tr.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function openTrend(){
+  const r=RATIOS[+rankSel.value];
+  const {yrs,series}=trendData(r);
+  if(!yrs.length){toast('ยังไม่มีข้อมูลรายปีพอจะวาดกราฟ','warn');return;}
+  series.forEach(s=>{if(_trVis[s.key]===undefined)_trVis[s.key]=true;});
+  _trState={yrs,series,r,pts:{}};
+  const metric=rankSel.options[rankSel.selectedIndex]?rankSel.options[rankSel.selectedIndex].text:'';
+  const isSum=(r.cat===5);
+  const g=series[0].data, first=g.find(v=>v!=null), last=[...g].reverse().find(v=>v!=null);
+  const chg=(first!=null&&last!=null&&first!==0)?((last-first)/Math.abs(first)*100):null;
+  const chgTx=chg==null?'':(' · '+(chg>=0?'▲ +':'▼ ')+fmt(chg,1)+'% จากปี '+yrs[0]+' ถึง '+yrs[yrs.length-1]);
+  const note=isSum?'ยอดรวม = ผลบวกทั้ง '+(series.length-1)+' บริษัท (ไม่ได้ตัดรายการระหว่างกัน)'
+                  :'ยอดรวม = คำนวณจากงบรวมของเครือ ไม่ใช่ค่าเฉลี่ยของอัตราส่วนรายบริษัท';
+  const leg=series.map(s=>'<span class="tr-lg'+(_trVis[s.key]===false?' off':'')+'" data-k="'+s.key+'">'
+      +'<i style="background:'+s.c+'"></i>'+s.nm+'</span>').join('');
+  const head='<tr><th>ปี</th>'+series.map(s=>'<th>'+s.nm+'</th>').join('')+'</tr>';
+  const rows=[...yrs].reverse().map(y=>{                          /* ตารางเรียงใหม่→เก่า */
+    const i=yrs.indexOf(y);
+    return '<tr><td>'+y+'</td>'+series.map(s=>{const v=s.data[i];
+      return '<td'+(s.main?' class="gv"':'')+'>'+(v==null?'–':fmt(v,r.dec)+r.suf)+'</td>';}).join('')+'</tr>';
+  }).join('');
+  openBlock('แนวโน้มเครือสุขสมบูรณ์: '+metric,
+    '<div class="trend">'
+    +'<div class="tr-sub">เกณฑ์ <b>'+metric+'</b>'+chgTx+'<br>'+note+'</div>'
+    +'<div class="tr-leg" id="trLeg">'+leg+'</div>'
+    +'<div class="tr-chart" id="trWrap"><svg id="trSvg" viewBox="0 0 720 300" preserveAspectRatio="none"></svg>'
+    +'<div class="tr-cross" id="trCross"></div><div class="tr-tip" id="trTip"></div></div>'
+    +'<div class="tr-tblwrap"><table class="tr-tbl"><thead>'+head+'</thead><tbody id="trRows">'+rows+'</tbody></table></div>'
+    +'</div>');
+  const bi=document.getElementById('blockBody').firstElementChild;
+  if(bi){bi.style.minWidth='0';bi.style.width='100%';}
+  drawTrend(); wireTrendHover();
+  document.getElementById('trLeg').onclick=e=>{
+    const el=e.target.closest('.tr-lg'); if(!el)return;
+    const k=el.dataset.k;
+    const onCount=_trState.series.filter(s=>_trVis[s.key]!==false).length;
+    if(_trVis[k]!==false&&onCount<=1){toast('ต้องเหลือเส้นอย่างน้อย 1 เส้น','warn');return;}
+    _trVis[k]=(_trVis[k]===false);
+    el.classList.toggle('off',_trVis[k]===false);
+    drawTrend(); wireTrendHover();
   };
 }
 
@@ -1333,6 +1558,8 @@ themeCharts();
 function repaintCharts(){                       /* เรียกตอนสลับธีม */
   themeCharts();
   try{ renderCharts(); drawAsset(); drawFund(); }catch(e){}
+  /* กราฟแนวโน้มเป็น SVG ที่ฝังสีไว้ตอนวาด ถ้าเปิดค้างอยู่ต้องวาดใหม่ */
+  try{ if(document.getElementById('trSvg')){ drawTrend(); wireTrendHover(); } }catch(e){}
 }
 function renderCharts(){
   if(cmpYears.length&&selected.length){ renderChartsCmp(); return; }
