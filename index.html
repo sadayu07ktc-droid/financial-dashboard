@@ -422,6 +422,30 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 .skwrap .ldr{position:absolute;inset:0;justify-content:center;padding:0;z-index:2}
 .skwrap .ldr-tx{background:var(--card);padding:3px 12px;border-radius:20px}
 
+/* ============ การ์ดรวมยอดเครือ (มุมขวาของหัวข้อจัดอันดับ) ============ */
+.grpsum{margin-left:auto;display:flex;align-items:center;gap:10px;background:var(--card2);
+  border:1px solid var(--line2);border-radius:12px;padding:8px 13px;font-size:12.5px;transition:.15s}
+.grpsum.top{border-color:var(--acc)}
+.gs-dot{width:9px;height:9px;border-radius:3px;background:var(--acc);flex:none}
+.gs-name{font-weight:600;color:var(--tx);border-bottom:1px dashed var(--tx3);cursor:help;white-space:nowrap}
+.gs-v{font-family:'Space Grotesk';font-weight:700;font-size:15px;color:var(--acc);white-space:nowrap}
+.gs-rank{font-family:'Space Grotesk';font-size:11.5px;font-weight:600;color:var(--tx2);
+  background:var(--bg2);border-radius:7px;padding:3px 9px;white-space:nowrap}
+.grpsum.top .gs-rank{background:var(--acc);color:var(--onacc)}
+@media(max-width:760px){.grpsum{margin-left:0;width:100%;justify-content:space-between}}
+
+.gstip{position:fixed;z-index:140;background:var(--card);border:1px solid var(--line2);
+  border-radius:13px;padding:13px 15px;box-shadow:0 18px 44px var(--shadow2);font-size:12.5px;
+  min-width:244px;max-width:min(320px,92vw);display:none;pointer-events:none}
+.gstip.show{display:block;animation:pop .16s}
+.gstip .gt-h{font-size:11.5px;color:var(--tx3);margin-bottom:9px;line-height:1.45}
+.gstip .gt-r{display:flex;justify-content:space-between;gap:16px;padding:4px 0;color:var(--tx2)}
+.gstip .gt-r b{font-family:'Space Grotesk';font-weight:600;color:var(--tx)}
+.gstip .gt-t{display:flex;justify-content:space-between;gap:16px;margin-top:8px;padding-top:9px;
+  border-top:1px solid var(--line2);color:var(--tx);font-weight:600}
+.gstip .gt-t b{font-family:'Space Grotesk';font-weight:700;color:var(--acc);font-size:14.5px}
+.gstip .gt-n{font-size:10.5px;color:var(--tx3);margin-top:9px;line-height:1.5}
+
 /* ===================== ป้าย build ===================== */
 .bld{text-align:center;font-size:11px;color:var(--tx3);margin-top:34px;cursor:pointer;user-select:none}
 .bld:hover{color:var(--acc)}
@@ -542,6 +566,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
           <div class="ptitle" style="margin:0"><span class="dot"></span>จัดอันดับ Ranking</div>
           <select class="sel" id="rankSel"></select>
           <button class="expbtn" id="rankExp" title="ดูเต็มจอ">⤢ ขยาย</button>
+          <div class="grpsum" id="grpSum" style="display:none"></div>
         </div>
         <div id="rankCap" class="rkcap"></div>
         <div id="rankList">
@@ -650,7 +675,7 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-08-23 · 1';
+const BUILD='2569-08-23 · 2';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1151,6 +1176,85 @@ function rankAvgField(coId,fn,yrs){
   yrs.forEach(y=>{const rec=ALLDATA.find(x=>x.id===coId&&x.year===y);if(rec){const v=fn(rec);if(isFinite(v))vals.push(v);}});
   return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:0;
 }
+/* ============================================================
+   รวมยอด "เครือสุขสมบูรณ์" 4 บริษัท — พืช / ปาล์ม / สกล / บ่อไร่
+   ยอดเงิน (รายได้ กำไร) = บวกกันตรงๆ
+   อัตราส่วน (ROA, D/E, จำนวนวัน) = คำนวณจากงบรวม เช่น Σกำไร/Σสินทรัพย์
+     ไม่ใช่เอาอัตราส่วนรายบริษัทมาเฉลี่ย ซึ่งจะให้ค่าผิด
+   ============================================================ */
+const GRP_LABEL='รวมเครือสุขสมบูรณ์';
+const GRP_RE=/สุขสมบูรณ์/;
+const GRP_SHORT={'205549030631':'พืช','205542004111':'ปาล์ม','205559006091':'สกล','235549000359':'บ่อไร่'};
+const GRP_ORDER=['พืช','ปาล์ม','สกล','บ่อไร่'];
+const GRP_SUMF=NUMF.filter(f=>f!=='r9');                  /* r9 เป็นอัตรา ไม่ใช่ยอด */
+function grpIds(){return [...new Set(ALLDATA.filter(r=>GRP_RE.test(r.name)).map(r=>r.id))];}
+function grpShort(id,fallback){return GRP_SHORT[_idkey(id)]||fallback||id;}
+function grpRecs(year){return ALLDATA.filter(r=>GRP_RE.test(r.name)&&r.year===year);}
+function grpConsolidated(year){                            /* งบรวมของเครือ ณ ปีนั้น */
+  const recs=grpRecs(year); if(!recs.length)return null;
+  const o={};
+  GRP_SUMF.forEach(f=>o[f]=recs.reduce((s,r)=>s+(+r[f]||0),0));
+  const rev=o.rev||0;
+  o.r9=rev>0?recs.reduce((s,r)=>s+(+r.r9||0)*(+r.rev||0),0)/rev          /* ถ่วงน้ำหนักด้วยรายได้ */
+            :recs.reduce((s,r)=>s+(+r.r9||0),0)/recs.length;
+  o.n=recs.length;
+  return o;
+}
+function grpValue(r,yrs){                                  /* หลายปี = เฉลี่ยค่าของงบรวมรายปี */
+  const vals=[];
+  yrs.forEach(y=>{const c=grpConsolidated(y); if(c){const v=r.f(c); if(isFinite(v))vals.push(v);}});
+  return vals.length?vals.reduce((s,v)=>s+v,0)/vals.length:null;
+}
+const _gtip=(()=>{const d=document.createElement('div');d.className='gstip';document.body.appendChild(d);return d;})();
+function renderGrpSum(r,yrs,all){
+  const box=document.getElementById('grpSum'); if(!box)return;
+  const v=grpValue(r,yrs), ids=grpIds();
+  if(v==null||ids.length<2){box.style.display='none';return;}
+  box.style.display='';
+
+  /* อันดับ = แทรกยอดรวมเข้าไปในลิสต์ที่กำลังโชว์อยู่ */
+  const better=all.filter(o=>r.hi?o.v>v:o.v<v).length;
+  const rank=better+1, tot=all.length+1;
+  box.classList.toggle('top',rank===1);
+  box.innerHTML='<span class="gs-dot"></span>'
+    +'<span class="gs-name" id="gsName">'+GRP_LABEL+'</span>'
+    +'<span class="gs-v">'+fmt(v,r.dec)+r.suf+'</span>'
+    +'<span class="gs-rank">#'+rank+' / '+tot+'</span>';
+
+  /* กล่องสรุปรายบริษัทตอนเอาเมาส์ชี้ที่ชื่อ */
+  const isSum=(r.cat===5);                                  /* หมวดขนาดกิจการ = บวกกันได้ */
+  const rows=ids.map(id=>{
+      const rec=ALLDATA.find(x=>x.id===id);
+      return {s:grpShort(id,rec&&rec.name),v:rankAvg(id,r,yrs)};
+    }).filter(o=>o.v!=null&&isFinite(o.v))
+      .sort((a,b)=>{const ia=GRP_ORDER.indexOf(a.s),ib=GRP_ORDER.indexOf(b.s);
+                    return (ia<0?99:ia)-(ib<0?99:ib);});
+  const head=rankSel.options[rankSel.selectedIndex]?rankSel.options[rankSel.selectedIndex].text:'';
+  const per=yrs.length>1?('เฉลี่ย '+yrs.length+' ปี ('+[...yrs].sort().join(', ')+')'):('ปี '+(yrs[0]||'-'));
+  const note=isSum?'รวม = ผลบวกทั้ง '+rows.length+' บริษัท · ไม่ได้ตัดรายการระหว่างกัน'
+                  :'รวม = คำนวณจากงบรวมของเครือ ไม่ใช่ค่าเฉลี่ยของอัตราส่วนรายบริษัท';
+  _gtip.innerHTML='<div class="gt-h">'+head+' · '+per+'</div>'
+    +rows.map(o=>'<div class="gt-r"><span>'+o.s+'</span><b>'+fmt(o.v,r.dec)+r.suf+'</b></div>').join('')
+    +'<div class="gt-t"><span>รวมทั้งเครือ</span><b>'+fmt(v,r.dec)+r.suf+'</b></div>'
+    +'<div class="gt-n">'+note+'</div>';
+
+  const nm=document.getElementById('gsName');
+  const place=e=>{
+    _gtip.classList.add('show');
+    const b=_gtip.getBoundingClientRect(), pad=10;
+    let x=e.clientX+14, y=e.clientY+16;
+    if(x+b.width>innerWidth-pad)x=innerWidth-b.width-pad;
+    if(y+b.height>innerHeight-pad)y=e.clientY-b.height-14;
+    _gtip.style.left=Math.max(pad,x)+'px'; _gtip.style.top=Math.max(pad,y)+'px';
+  };
+  nm.onmouseenter=place; nm.onmousemove=place;
+  nm.onmouseleave=()=>_gtip.classList.remove('show');
+  nm.onclick=e=>{                                            /* มือถือ: แตะเพื่อดู */
+    if(_gtip.classList.contains('show')){_gtip.classList.remove('show');return;}
+    place(e); setTimeout(()=>_gtip.classList.remove('show'),4500);
+  };
+}
+
 function renderRank(){
   const r=RATIOS[+rankSel.value];
   const yrs=cmpYears.length?[...cmpYears]:[curYear];               // ปีที่เลือก (หลายปี=เฉลี่ย)
@@ -1161,6 +1265,7 @@ function renderRank(){
     .filter(o=>handpick||o.rev>=RANK_MINREV)                       // กรองบริษัทแทบไม่มีรายได้ (เฉพาะตอนดูทุกบริษัท)
     .sort((a,b)=>r.hi?b.v-a.v:a.v-b.v);
   const total=all.length;
+  renderGrpSum(r,yrs,all);
   // คำอธิบาย
   const cap=document.getElementById('rankCap');
   if(cap){
