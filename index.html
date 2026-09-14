@@ -31,6 +31,7 @@ document.documentElement.setAttribute('data-theme',t);})();</script>
   --acc2tint:rgba(37,99,235,.10);  --acc2line:rgba(37,99,235,.30);
   --badline:rgba(196,31,82,.42);
   --sumlbl:#E3EAF7;
+  --bar:rgba(89,101,138,.22); --barhi:rgba(89,101,138,.38);
   --shadow:rgba(21,27,51,.13); --shadow2:rgba(21,27,51,.20);
   --scrim:rgba(28,36,60,.45);
   --glow1:rgba(7,121,94,.08); --glow2:rgba(37,99,235,.09);
@@ -52,6 +53,7 @@ document.documentElement.setAttribute('data-theme',t);})();</script>
   --acc2tint:rgba(59,130,246,.14);  --acc2line:rgba(59,130,246,.32);
   --badline:rgba(242,97,140,.45);
   --sumlbl:#1A2740;
+  --bar:rgba(154,168,199,.20); --barhi:rgba(154,168,199,.34);
   --shadow:rgba(0,0,0,.45); --shadow2:rgba(0,0,0,.55);
   --scrim:rgba(4,7,14,.78);
   --glow1:rgba(94,231,194,.07); --glow2:rgba(59,130,246,.08);
@@ -476,6 +478,10 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 .tr-lg:hover{border-color:var(--acc);color:var(--tx)}
 .tr-lg i{width:11px;height:11px;border-radius:3px;flex:none}
 .tr-lg.off{opacity:.4}
+.tr-lg.bar i{border-radius:2px;width:13px;height:9px}
+.tr-bar .sel.sm{flex:none;min-width:0;width:auto;max-width:190px}
+table.tr-tbl th.bcol,table.tr-tbl td.bcol{border-left:1px solid var(--line2)}
+table.tr-tbl tbody td.bcol{color:var(--tx)}
 .tr-lg.off i{background:var(--tx3)!important}
 .tr-tblwrap{overflow:auto;max-height:260px;border:1px solid var(--line);border-radius:12px}
 table.tr-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
@@ -720,7 +726,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-08-23 · 4';
+const BUILD='2569-09-14 · 5';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1325,6 +1331,20 @@ function _smooth(p){
   return d;
 }
 let _trVis={}, _trState=null;
+/* ยอดเงินที่เอามาทำแท่งบนแกนขวา (หน่วย ลบ.) */
+const TR_BARS=[
+  {k:'rev',    nm:'รายได้รวม'},
+  {k:'np',     nm:'กำไรสุทธิ'},
+  {k:'assets', nm:'สินทรัพย์รวม'},
+  {k:'eq',     nm:'ส่วนของผู้ถือหุ้น'},
+  {k:'liab',   nm:'หนี้สินรวม'},
+];
+let _trBar='rev';
+function trBarField(){return TR_BARS.find(b=>b.k===_trBar)||TR_BARS[0];}
+function trBarVals(yrs){                                   /* งบรวมของเครือ แปลงเป็นล้านบาท */
+  const f=trBarField().k;
+  return yrs.map(y=>{const c=grpConsolidated(y);return c?(+c[f]||0)/1e6:null;});
+}
 function trendData(r){
   const yrs=[...YEARS].sort();                                  /* เก่า → ใหม่ */
   const val=(rec)=>{if(!rec)return null;const v=r.f(rec);return isFinite(v)?v:null;};
@@ -1350,7 +1370,10 @@ function drawTrend(){
   const rcw=svg.parentElement.getBoundingClientRect();
   const W=Math.max(200,Math.round(rcw.width)||720), H=Math.max(170,Math.round(rcw.height)||300);
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  const pad={l:W<430?44:58,r:W<430?12:18,t:16,b:30};   /* จอแคบย่อขอบแกน Y ให้เหลือพื้นที่วาดมากขึ้น */
+  const barOn=_trVis['__BAR__']!==false;
+  const pad={l:W<430?44:58,
+             r:barOn?(W<430?40:58):(W<430?12:18),        /* เปิดแท่ง = เผื่อที่ให้ป้ายแกนขวา */
+             t:16,b:30};   /* จอแคบย่อขอบแกน Y ให้เหลือพื้นที่วาดมากขึ้น */
   const on=series.filter(s=>_trVis[s.key]!==false);
   const flat=on.flatMap(s=>s.data).filter(v=>v!=null);
   if(!flat.length){svg.innerHTML='';return;}
@@ -1372,6 +1395,33 @@ function drawTrend(){
     return '<line x1="'+x.toFixed(1)+'" y1="'+pad.t+'" x2="'+x.toFixed(1)+'" y2="'+(H-pad.b)+'" stroke="'+cssv('--line')+'" stroke-width="1" stroke-dasharray="2 4"/>'
       +'<text x="'+x.toFixed(1)+'" y="'+(H-pad.b+16)+'" fill="'+cssv('--tx3')+'" font-size="11" text-anchor="middle" font-family="Space Grotesk">'+y+'</text>';
   }).join('');
+  /* ----- แท่งยอดเงิน (แกนขวา) วาดก่อนเส้น จะได้อยู่ข้างหลัง ----- */
+  let bars='',rax='';
+  const bvals=trBarVals(yrs);
+  st.bars=bvals; st.barNm=trBarField().nm;
+  const bok=bvals.filter(v=>v!=null);
+  if(barOn&&bok.length){
+    const bhi=Math.max(0,...bok), blo=Math.min(0,...bok);
+    let bmax=bhi+(bhi-blo)*.15, bmin=blo<0?blo-(bhi-blo)*.15:0;
+    if(bmax===bmin){bmax=bmin+1;}
+    const BY=v=>pad.t+(1-(v-bmin)/(bmax-bmin))*(H-pad.t-pad.b);
+    const step=(W-pad.l-pad.r)/Math.max(1,yrs.length-1);
+    const bw=Math.max(9,Math.min(38,step*0.38));
+    const zero=BY(0);
+    bvals.forEach((v,i)=>{ if(v==null)return;
+      const y=BY(v), top=Math.min(y,zero), h=Math.max(1.5,Math.abs(y-zero));
+      bars+='<rect x="'+(X(i)-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)
+        +'" height="'+h.toFixed(1)+'" rx="3" fill="'+cssv('--bar')+'"/>';
+    });
+    if(blo<0)bars+='<line x1="'+pad.l+'" y1="'+zero.toFixed(1)+'" x2="'+(W-pad.r)+'" y2="'+zero.toFixed(1)
+      +'" stroke="'+cssv('--barhi')+'" stroke-width="1"/>';
+    rax=[0,.25,.5,.75,1].map(g=>{
+      const y=pad.t+g*(H-pad.t-pad.b), v=bmax-g*(bmax-bmin);
+      return '<text x="'+(W-pad.r+8)+'" y="'+(y+3.5).toFixed(1)+'" fill="'+cssv('--tx3')
+        +'" font-size="10" text-anchor="start" font-family="Space Grotesk">'+fmt(v,0)+'</text>';
+    }).join('');
+    rax+='<text x="'+(W-pad.r+8)+'" y="'+(pad.t-5)+'" fill="'+cssv('--tx3')+'" font-size="9.5" text-anchor="start">ลบ.</text>';
+  }
   let defs='',body='';
   st.pts={};
   on.forEach(sr=>{
@@ -1389,7 +1439,7 @@ function drawTrend(){
     body+='<path d="'+line+'" fill="none" stroke="'+sr.c+'" stroke-width="'+sr.w+'" stroke-linecap="round" stroke-linejoin="round"'+(sr.main?'':' stroke-opacity=".92"')+'/>';
     pts.forEach(p=>{body+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="'+(sr.main?4:3)+'" fill="'+sr.c+'"/>';});
   });
-  svg.innerHTML='<defs>'+defs+'</defs>'+grid+xax+body;
+  svg.innerHTML='<defs>'+defs+'</defs>'+grid+xax+bars+body+rax;
   st.X=X; st.W=W; st.H=H;
   /* จุดตามเมาส์ ทำทีละเส้น */
   const wrap=document.getElementById('trWrap');
@@ -1423,6 +1473,11 @@ function wireTrendHover(){
       rows+='<div class="tt-r"><span><i style="background:'+sr.c+'"></i> '+sr.nm+'</span>'
         +'<b>'+(v==null?'–':fmt(v,st.r.dec)+st.r.suf)+'</b></div>';
     });
+    if(_trVis['__BAR__']!==false&&st.bars&&st.bars[i]!=null){
+      rows+='<div class="tt-r" style="margin-top:5px;padding-top:6px;border-top:1px solid var(--line)">'
+        +'<span><i style="background:var(--barhi)"></i> '+st.barNm+'</span>'
+        +'<b>'+fmt(st.bars[i],0)+' ลบ.</b></div>';
+    }
     tip.innerHTML='<div class="tt-y">ปี '+st.yrs[i]+'</div>'+rows;
     tip.style.left=Math.max(90,Math.min(rc.width-90,px))+'px';
     tip.style.top=Math.max(10,(top==null?40:top))+'px';
@@ -1459,14 +1514,19 @@ function trendRefresh(){                                          /* คำน�
                   :'ยอดรวม = คำนวณจากงบรวมของเครือ ไม่ใช่ค่าเฉลี่ยของอัตราส่วนรายบริษัท';
   document.getElementById('blockTitle').textContent='แนวโน้มเครือสุขสมบูรณ์: '+metric;
   document.getElementById('trSub').innerHTML=(chgTx?'<b>'+chgTx+'</b> · ':'')+note;
+  const bnm=trBarField().nm, bvals=trBarVals(yrs);
   document.getElementById('trLeg').innerHTML=series.map(s=>
     '<span class="tr-lg'+(_trVis[s.key]===false?' off':'')+'" data-k="'+s.key+'">'
-    +'<i style="background:'+s.c+'"></i>'+s.nm+'</span>').join('');
-  document.getElementById('trHead').innerHTML='<tr><th>ปี</th>'+series.map(s=>'<th>'+s.nm+'</th>').join('')+'</tr>';
+    +'<i style="background:'+s.c+'"></i>'+s.nm+'</span>').join('')
+    +'<span class="tr-lg bar'+(_trVis['__BAR__']===false?' off':'')+'" data-k="__BAR__">'
+    +'<i style="background:var(--barhi)"></i>'+bnm+' (แท่ง)</span>';
+  document.getElementById('trHead').innerHTML='<tr><th>ปี</th>'+series.map(s=>'<th>'+s.nm+'</th>').join('')
+    +'<th class="bcol">'+bnm+' (ลบ.)</th></tr>';
   document.getElementById('trRows').innerHTML=[...yrs].reverse().map(y=>{   /* ตารางเรียงใหม่→เก่า */
     const i=yrs.indexOf(y);
     return '<tr><td>'+y+'</td>'+series.map(s=>{const v=s.data[i];
-      return '<td'+(s.main?' class="gv"':'')+'>'+(v==null?'–':fmt(v,r.dec)+r.suf)+'</td>';}).join('')+'</tr>';
+      return '<td'+(s.main?' class="gv"':'')+'>'+(v==null?'–':fmt(v,r.dec)+r.suf)+'</td>';}).join('')
+      +'<td class="bcol">'+(bvals[i]==null?'–':fmt(bvals[i],0))+'</td></tr>';
   }).join('');
   drawTrend(); wireTrendHover();
 }
@@ -1482,7 +1542,11 @@ function openTrend(){
   openBlock('แนวโน้มเครือสุขสมบูรณ์',
     '<div class="trend">'
     +'<div class="tr-bar"><span class="tr-bl">ดูเรื่อง</span>'
-    +'<select class="sel" id="trSel">'+opts+'</select></div>'
+    +'<select class="sel" id="trSel">'+opts+'</select>'
+    +'<span class="tr-bl">แท่ง</span>'
+    +'<select class="sel sm" id="trBarSel">'
+    +TR_BARS.map(b=>'<option value="'+b.k+'"'+(b.k===_trBar?' selected':'')+'>'+b.nm+'</option>').join('')
+    +'</select></div>'
     +'<div class="tr-sub" id="trSub"></div>'
     +'<div class="tr-leg" id="trLeg"></div>'
     +'<div class="tr-chart" id="trWrap"><svg id="trSvg" preserveAspectRatio="none"></svg>'
@@ -1496,11 +1560,16 @@ function openTrend(){
   document.getElementById('trSel').onchange=e=>{
     rankSel.value=e.target.value; rankLimit=10; renderRank(); trendRefresh();
   };
+  document.getElementById('trBarSel').onchange=e=>{       /* เปลี่ยนยอดเงินที่เอามาทำแท่ง */
+    _trBar=e.target.value; _trVis['__BAR__']=true; trendRefresh();
+  };
   document.getElementById('trLeg').onclick=e=>{
     const el=e.target.closest('.tr-lg'); if(!el)return;
     const k=el.dataset.k;
-    const onCount=_trState.series.filter(s=>_trVis[s.key]!==false).length;
-    if(_trVis[k]!==false&&onCount<=1){toast('ต้องเหลือเส้นอย่างน้อย 1 เส้น','warn');return;}
+    if(k!=='__BAR__'){                                     /* แท่งเป็นแกนขวา ปิดได้อิสระ */
+      const onCount=_trState.series.filter(s=>_trVis[s.key]!==false).length;
+      if(_trVis[k]!==false&&onCount<=1){toast('ต้องเหลือเส้นอย่างน้อย 1 เส้น','warn');return;}
+    }
     _trVis[k]=(_trVis[k]===false);
     el.classList.toggle('off',_trVis[k]===false);
     drawTrend(); wireTrendHover();
