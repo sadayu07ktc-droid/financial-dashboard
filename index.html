@@ -12,7 +12,6 @@ document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
 /* ===== ธีม: token ชุดเดียวคุมทั้งแอป — ห้าม hardcode สีในชิ้นส่วน ไม่งั้นอีกโหมดพัง ===== */
@@ -237,6 +236,15 @@ select.sel:focus{border-color:var(--acc)}
 .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
 @media(max-width:760px){.cols2{grid-template-columns:1fr}}
 .chartbox{position:relative;height:240px;margin-top:6px}
+.ecbox{width:100%;height:100%}                    /* ECharts อ่านความสูงตอน init ถ้าเป็น 0 กราฟไม่โผล่ */
+.chfb{width:100%;height:100%;overflow:auto}       /* ทางถอยเมื่อโหลดไลบรารีไม่ได้ */
+.chfb table{width:100%;border-collapse:collapse;font-size:11.5px}
+.chfb th,.chfb td{padding:5px 8px;text-align:right;white-space:nowrap}
+.chfb th{position:sticky;top:0;background:var(--bg2);color:var(--tx);font-weight:600;font-size:11px}
+.chfb td:first-child,.chfb th:first-child{text-align:left;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.chfb tbody tr{border-bottom:1px solid var(--line)}
+.chfb tbody td{color:var(--tx2);font-family:'Space Grotesk',sans-serif}
+.chfb .fbnote{font-size:11px;color:var(--warn);padding:6px 8px}
 .empty-note{color:var(--tx3);font-size:13px;text-align:center;padding:40px 0}
 
 /* zoom modal */
@@ -633,30 +641,30 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   <div class="cols2">
     <div class="panel">
       <div class="ptitle"><span class="dot"></span>รายได้รวม vs กำไรสุทธิ</div>
-      <div class="chartbox"><canvas id="chRev"></canvas></div>
+      <div class="chartbox"><div id="chRev" class="ecbox"></div><div id="chRevFb" class="chfb" hidden></div></div>
     </div>
     <div class="panel">
       <div class="ptitle"><span class="dot"></span>โครงสร้างต้นทุน (สัดส่วนรายได้)</div>
-      <div class="chartbox"><canvas id="chCost"></canvas></div>
+      <div class="chartbox"><div id="chCost" class="ecbox"></div><div id="chCostFb" class="chfb" hidden></div></div>
     </div>
   </div>
 
   <div class="panel" style="margin-top:20px">
     <div class="ptitle"><span class="dot"></span>รายได้ · รายจ่าย · กำไร (เทียบรายบริษัท)</div>
-    <div class="chartbox" style="height:300px"><canvas id="chRPL"></canvas></div>
+    <div class="chartbox" style="height:300px"><div id="chRPL" class="ecbox"></div><div id="chRPLFb" class="chfb" hidden></div></div>
   </div>
 
   <div class="cols2">
     <div class="panel">
       <div class="ptitle"><span class="dot"></span><select class="sel sm structSel" id="structA"></select></div>
       <div class="combo dd-combo"><input class="combo-in" id="ddSearchA" placeholder="พิมพ์ค้นหาบริษัท..." autocomplete="off"><span class="dd-x" id="ddClearA">×</span><div class="combo-list" id="ddListA"></div></div>
-      <div class="donutbox"><canvas id="chAsset"></canvas><div class="dcenter" id="dcA"></div></div>
+      <div class="donutbox"><div id="chAsset" class="ecbox"></div><div id="chAssetFb" class="chfb" hidden></div><div class="dcenter" id="dcA"></div></div>
       <div class="dlegend" id="legA"></div>
     </div>
     <div class="panel">
       <div class="ptitle"><span class="dot"></span><select class="sel sm structSel" id="structB"></select></div>
       <div class="combo dd-combo"><input class="combo-in" id="ddSearchB" placeholder="พิมพ์ค้นหาบริษัท..." autocomplete="off"><span class="dd-x" id="ddClearB">×</span><div class="combo-list" id="ddListB"></div></div>
-      <div class="donutbox"><canvas id="chFund"></canvas><div class="dcenter" id="dcB"></div></div>
+      <div class="donutbox"><div id="chFund" class="ecbox"></div><div id="chFundFb" class="chfb" hidden></div><div class="dcenter" id="dcB"></div></div>
       <div class="dlegend" id="legB"></div>
     </div>
   </div>
@@ -706,7 +714,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
       <span id="modalTitle" class="modal-title"></span>
       <button class="modal-x" id="modalX">×</button>
     </div>
-    <div class="modal-body"><canvas id="bigCanvas"></canvas><div class="dcenter" id="bigCenter" style="display:none"></div></div>
+    <div class="modal-body"><div id="bigCanvas" class="ecbox"></div><div id="bigCanvasFb" class="chfb" hidden></div><div class="dcenter" id="bigCenter" style="display:none"></div></div>
   </div>
 </div>
 
@@ -726,7 +734,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-09-14 · 5';
+const BUILD='2569-09-14 · 6';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1643,150 +1651,230 @@ function renderRank(){
 }
 
 /* charts */
-let chRev,chCost,chRPL;
-/* ปลั๊กอินวาดชื่อแบรนด์บนหัวแท่ง (เฉพาะตอนเลือกด้วยชิปแบรนด์) */
-const brandTopPlugin={
-  id:'brandTop',
-  afterDatasetsDraw(chart,args,opts){
-    if(!brandActive)return;
-    const labels=(opts&&opts.labels)||[];
-    if(!labels.length)return;
-    const ctx=chart.ctx, n=chart.data.labels.length;
-    ctx.save();
-    ctx.font="600 11px 'IBM Plex Sans Thai',sans-serif";
-    ctx.fillStyle='#F5B73D';
-    ctx.textAlign='center';
-    ctx.textBaseline='bottom';
-    for(let i=0;i<n;i++){
-      const t=labels[i]; if(!t)continue;
-      let topY=Infinity,x=null;
-      chart.data.datasets.forEach((d,di)=>{
-        const m=chart.getDatasetMeta(di); const el=m.data[i];
-        if(el&&typeof el.y==='number'&&el.y<topY){topY=el.y;x=el.x;}
-      });
-      if(x==null)continue;
-      ctx.fillText(t,x,topY-6);
-    }
-    ctx.restore();
-  }
-};
-function themeCharts(){                        /* กราฟต้องอ่านสีจาก token ไม่งั้นสลับธีมแล้วแกน/เส้นตารางจม */
-  Chart.defaults.color=cssv('--tx2');
-  Chart.defaults.borderColor=cssv('--line');
+/* ============================================================
+   กราฟทั้งหมดใช้ ECharts (SVG renderer) โหลดแบบ lazy
+   ถ้า CDN เข้าไม่ถึง จะถอยไปแสดงตารางตัวเลขแทน หน้าไม่พัง
+   ============================================================ */
+const EC_URL='https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.common.min.js';
+const EC={}, ECBUILD={};            /* EC = instance ต่อกล่อง · ECBUILD = ตัวสร้าง option ไว้ให้ modal ขยายใช้ซ้ำ */
+let ecLoading=null, ecDead=false;
+function loadECharts(){
+  if(window.echarts)return Promise.resolve(window.echarts);
+  if(ecLoading)return ecLoading;
+  ecLoading=new Promise((res,rej)=>{
+    const t=document.createElement('script');
+    t.src=EC_URL; t.async=true;
+    t.onload=()=>res(window.echarts);
+    t.onerror=()=>{ecLoading=null;rej(new Error('โหลดไลบรารีกราฟไม่ได้'));};
+    document.head.appendChild(t);
+  });
+  return ecLoading;
 }
-Chart.defaults.font.family="'IBM Plex Sans Thai',sans-serif";
-themeCharts();
-function repaintCharts(){                       /* เรียกตอนสลับธีม */
-  themeCharts();
+function ecReady(draw,fallback){
+  if(ecDead){fallback();return;}
+  loadECharts().then(()=>{try{draw();}catch(e){console.error('draw failed:',e);fallback();}})
+               .catch(e=>{console.error(e);ecDead=true;fallback();});
+}
+function ecMake(id){
+  const box=document.getElementById(id);
+  if(EC[id]){EC[id].dispose();delete EC[id];}     /* ต้อง dispose ก่อน init ไม่งั้นซ้อนกันกินแรม */
+  box.innerHTML='';
+  EC[id]=window.echarts.init(box,null,{renderer:'svg'});
+  return EC[id];
+}
+window.addEventListener('resize',()=>{Object.keys(EC).forEach(k=>{try{EC[k].resize();}catch(e){}});});
+
+/* ---------- สีชุดข้อมูล (คงที่ทั้งสองธีม) แยกจากสีโครงหน้า (มาจาก token) ---------- */
+const CPAL={blue:'#3B82F6',mint:'#5EE7C2',pink:'#F2618C',amber:'#F5B73D'};
+
+function ecBase(){
+  return {
+    animationDuration:340,
+    textStyle:{fontFamily:"'IBM Plex Sans Thai',sans-serif"},
+    grid:{left:6,right:14,top:46,bottom:6,containLabel:true},
+    legend:{top:2,itemWidth:10,itemHeight:10,icon:'circle',type:'scroll',
+      pageIconColor:cssv('--tx2'),pageTextStyle:{color:cssv('--tx3')},
+      textStyle:{color:cssv('--tx2'),fontSize:11},inactiveColor:cssv('--tx3')},
+    tooltip:{trigger:'axis',confine:true,
+      backgroundColor:cssv('--card'),borderColor:cssv('--line2'),borderWidth:1,
+      textStyle:{color:cssv('--tx'),fontSize:12.5},
+      extraCssText:'border-radius:11px;box-shadow:0 14px 34px '+cssv('--shadow2'),
+      axisPointer:{type:'shadow',shadowStyle:{color:cssv('--rowhov')}}},
+    xAxis:{type:'category',axisTick:{show:false},
+      axisLine:{lineStyle:{color:cssv('--line2')}},
+      axisLabel:{color:cssv('--tx2'),fontSize:10}},
+    yAxis:{type:'value',splitLine:{lineStyle:{color:cssv('--line')}},
+      axisLine:{show:false},axisTick:{show:false},
+      axisLabel:{color:cssv('--tx3'),fontSize:10,fontFamily:"'Space Grotesk',sans-serif",
+        formatter:v=>fmt(v,0)}}
+  };
+}
+/* ป้ายแกน X เยอะ → เอียง 42° ไม่ใช่ซ่อน (แท่งรายบริษัทต้องเห็นครบ) */
+function ecCats(o,cats){
+  o.xAxis.data=cats;
+  const many=cats.length>9;
+  o.xAxis.axisLabel.rotate=many?42:0;
+  o.xAxis.axisLabel.align=many?'right':'center';
+  o.xAxis.axisLabel.interval=cats.length>24?'auto':0;
+  return o;
+}
+function ecUnit(o,txt){            /* หน่วยวางแนวตั้งกลางแกน ไม่ไปทับตัวเลขมุมบน */
+  o.yAxis.name=txt; o.yAxis.nameLocation='middle'; o.yAxis.nameRotate=90; o.yAxis.nameGap=44;
+  o.yAxis.nameTextStyle={color:cssv('--tx3'),fontSize:10};
+  return o;
+}
+function tipBox(title,rows){
+  return '<div style="font-weight:600;margin-bottom:6px">'+title+'</div>'+rows.join('');
+}
+function tipRow(color,name,val){
+  return '<div style="display:flex;gap:14px;justify-content:space-between;align-items:center;padding:1px 0">'
+   +'<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+color+';margin-right:6px"></i>'+name+'</span>'
+   +'<b style="font-family:\'Space Grotesk\',sans-serif">'+val+'</b></div>';
+}
+/* ตารางตัวเลขสำหรับกรณีโหลดไลบรารีไม่ได้ */
+function fbTable(cats,series,unit,dec){
+  return '<div class="fbnote">⚠️ โหลดไลบรารีกราฟไม่ได้ — แสดงเป็นตัวเลขแทน'+(unit?' (หน่วย: '+unit+')':'')+'</div>'
+   +'<table><thead><tr><th>รายการ</th>'+series.map(x=>'<th>'+x.name+'</th>').join('')+'</tr></thead><tbody>'
+   +cats.map((c,i)=>'<tr><td>'+c+'</td>'+series.map(x=>'<td>'+(x.data[i]==null||!isFinite(x.data[i])?'–':fmt(x.data[i],dec||0))+'</td>').join('')+'</tr>').join('')
+   +'</tbody></table>';
+}
+/* วาดกราฟหนึ่งกล่อง: สำเร็จ=ECharts · ล้มเหลว=ตาราง */
+function ecPaint(id,build){
+  ECBUILD[id]=build;
+  const box=document.getElementById(id), fb=document.getElementById(id+'Fb');
+  if(!box||!fb)return;
+  ecReady(()=>{ box.hidden=false; fb.hidden=true; ecMake(id).setOption(build().opt,true); },
+          ()=>{ box.hidden=true;  fb.hidden=false; fb.innerHTML=build().fb; });
+}
+function repaintCharts(){                       /* เรียกตอนสลับธีม — สีถูกอ่านไปแล้วตอน setOption ต้องวาดใหม่ */
   try{ renderCharts(); drawAsset(); drawFund(); }catch(e){}
-  /* กราฟแนวโน้มเป็น SVG ที่ฝังสีไว้ตอนวาด ถ้าเปิดค้างอยู่ต้องวาดใหม่ */
   try{ if(document.getElementById('trSvg')){ drawTrend(); wireTrendHover(); } }catch(e){}
+  try{ if(modal.classList.contains('show')&&_zoomId) openZoom(_zoomId,document.getElementById('modalTitle').textContent); }catch(e){}
 }
+
 function renderCharts(){
   if(cmpYears.length&&selected.length){ renderChartsCmp(); return; }
   const cs=selected.length?selected.map(id=>FULL.find(x=>x.id===id)):FULL;
-  const labels=cs.map(c=>c.name);
-  if(chRev)chRev.destroy();
-  chRev=new Chart(document.getElementById('chRev'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'รายได้รวม',data:cs.map(c=>c.rev/1e6),backgroundColor:'#3B82F6',borderRadius:6},
-      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/1e6),backgroundColor:'#5EE7C2',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:14,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'}}},
-      scales:{y:{ticks:{callback:v=>fmt(v,0)}},x:{ticks:{font:{size:10}}}}}
-  });
-  if(chCost)chCost.destroy();
-  chCost=new Chart(document.getElementById('chCost'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'ต้นทุนขาย',data:cs.map(c=>c.cogs/c.rev*100),baht:cs.map(c=>c.cogs/1e6),backgroundColor:'#F2618C',borderRadius:5,stack:'s'},
-      {label:'ค่าใช้จ่ายขาย&บริหาร',data:cs.map(c=>c.sga/c.rev*100),baht:cs.map(c=>c.sga/1e6),backgroundColor:'#F5B73D',borderRadius:5,stack:'s'},
-      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/c.rev*100),baht:cs.map(c=>c.np/1e6),backgroundColor:'#5EE7C2',borderRadius:5,stack:'s'}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:12,font:{size:10.5}}},
-        tooltip:{callbacks:{label:c=>{const b=c.dataset.baht?c.dataset.baht[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,1)+'%'+(b!=null?' ('+fmt(b,0)+' ลบ.)':'');}}}},
-      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}}}
+  const cats=cs.map(c=>c.name);
+
+  /* ----- รายได้รวม vs กำไรสุทธิ ----- */
+  ecPaint('chRev',()=>{
+    const rev=cs.map(c=>c.rev/1e6), np=cs.map(c=>c.np/1e6);
+    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),cats);
+    o.series=[
+      {name:'รายได้รวม',type:'bar',data:rev,barMaxWidth:28,itemStyle:{color:CPAL.blue,borderRadius:[5,5,0,0]}},
+      {name:'กำไรสุทธิ',type:'bar',data:np,barMaxWidth:28,itemStyle:{color:CPAL.mint,borderRadius:[5,5,0,0]}}];
+    o.tooltip.formatter=ps=>tipBox(ps[0].axisValue,ps.map(p=>tipRow(p.color,p.seriesName,fmt(p.value,0)+' ลบ.')));
+    return {opt:o,fb:fbTable(cats,[{name:'รายได้รวม',data:rev},{name:'กำไรสุทธิ',data:np}],'ลบ.',0)};
   });
 
-  if(chRPL)chRPL.destroy();
-  chRPL=new Chart(document.getElementById('chRPL'),{
-    type:'bar',
-    plugins:[brandTopPlugin],
-    data:{labels,datasets:[
-      {label:'รายจ่ายรวม',data:cs.map(c=>(c.exp+c.tax)/1e6),pct:cs.map(c=>(c.exp+c.tax)/c.rev*100),backgroundColor:'#F2618C',stack:'r',borderRadius:{topLeft:0,topRight:0,bottomLeft:6,bottomRight:6}},
-      {label:'กำไรสุทธิ',data:cs.map(c=>c.np/1e6),pct:cs.map(c=>c.np/c.rev*100),backgroundColor:'#5EE7C2',stack:'r',borderRadius:{topLeft:6,topRight:6,bottomLeft:0,bottomRight:0}}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      layout:{padding:{top:brandActive?20:0}},
-      plugins:{legend:{position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:14,font:{size:11}}},
-        brandTop:{labels:cs.map(c=>coBrands(c.id).join(', '))},
-        tooltip:{callbacks:{
-          label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');},
-          footer:items=>{const c=cs[items[0].dataIndex];return 'รายได้รวม: '+fmt(c.rev/1e6,0)+' ลบ.';}
-        }}},
-      scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:true,ticks:{callback:v=>fmt(v,0)},title:{display:true,text:'ล้านบาท',font:{size:10},color:cssv('--tx3')}}}}
+  /* ----- โครงสร้างต้นทุน (สัดส่วนรายได้ 100%) ----- */
+  ecPaint('chCost',()=>{
+    const pc=f=>cs.map(c=>c.rev?f(c)/c.rev*100:null), mb=f=>cs.map(c=>f(c)/1e6);
+    const segs=[{nm:'ต้นทุนขาย',c:CPAL.pink,f:c=>c.cogs},
+                {nm:'ค่าใช้จ่ายขาย&บริหาร',c:CPAL.amber,f:c=>c.sga},
+                {nm:'กำไรสุทธิ',c:CPAL.mint,f:c=>c.np}];
+    const baht=segs.map(g=>mb(g.f));
+    const o=ecCats(ecBase(),cats);
+    o.yAxis.max=100; o.yAxis.axisLabel.formatter=v=>v+'%';
+    o.series=segs.map((g,gi)=>({name:g.nm,type:'bar',stack:'s',data:pc(g.f),barMaxWidth:34,
+      itemStyle:{color:g.c,borderRadius:gi===segs.length-1?[4,4,0,0]:0}}));
+    o.tooltip.formatter=ps=>tipBox(ps[0].axisValue,ps.map(p=>{
+      const b=baht[p.seriesIndex]&&baht[p.seriesIndex][p.dataIndex];
+      return tipRow(p.color,p.seriesName,fmt(p.value,1)+'%'+(b!=null&&isFinite(b)?' ('+fmt(b,0)+' ลบ.)':''));}));
+    return {opt:o,fb:fbTable(cats,segs.map((g,gi)=>({name:g.nm+' %',data:pc(g.f)})),'%',1)};
+  });
+
+  /* ----- รายได้ · รายจ่าย · กำไร ----- */
+  ecPaint('chRPL',()=>{
+    const expv=cs.map(c=>(c.exp+c.tax)/1e6), npv=cs.map(c=>c.np/1e6);
+    const expP=cs.map(c=>c.rev?(c.exp+c.tax)/c.rev*100:null), npP=cs.map(c=>c.rev?c.np/c.rev*100:null);
+    const brands=cs.map(c=>coBrands(c.id).join(', '));
+    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),cats);
+    o.series=[
+      {name:'รายจ่ายรวม',type:'bar',stack:'r',data:expv,barMaxWidth:34,itemStyle:{color:CPAL.pink}},
+      {name:'กำไรสุทธิ',type:'bar',stack:'r',data:npv,barMaxWidth:34,itemStyle:{color:CPAL.mint,borderRadius:[5,5,0,0]},
+       label:{show:!!brandActive,position:'top',distance:6,color:CPAL.amber,fontSize:11,fontWeight:600,
+              formatter:p=>brands[p.dataIndex]||''}}];
+    const pcts=[expP,npP];
+    o.tooltip.formatter=ps=>{
+      const i=ps[0].dataIndex;
+      return tipBox(ps[0].axisValue,ps.map(p=>{
+        const q=pcts[p.seriesIndex]&&pcts[p.seriesIndex][p.dataIndex];
+        return tipRow(p.color,p.seriesName,fmt(p.value,0)+' ลบ.'+(q!=null&&isFinite(q)?' ('+fmt(q,1)+'%)':''));
+      }).concat(['<div style="margin-top:6px;padding-top:5px;border-top:1px solid '+cssv('--line')+';color:'+cssv('--tx2')+'">รายได้รวม: '+fmt(cs[i].rev/1e6,0)+' ลบ.</div>']));
+    };
+    return {opt:o,fb:fbTable(cats,[{name:'รายจ่ายรวม',data:expv},{name:'กำไรสุทธิ',data:npv}],'ลบ.',0)};
   });
 }
 
-/* โหมดเทียบข้ามปี: แกน X = ปี · กรุ๊ปตามปี (บริษัทอยู่ข้างกันในแต่ละปี) · มีเส้นแนวโน้มสมูท */
+/* โหมดเทียบข้ามปี: แกน X = ปี · บริษัทวางข้างกันในแต่ละปี */
 function renderChartsCmp(){
-  const yrs=[...cmpYears].sort();                 // ปีน้อย→มาก เป็นแกน X
+  const yrs=[...cmpYears].sort();
   const comps=selected.map(id=>companyMeta(id));
   const multi=comps.length>1;
   const recOf=(id,y)=>ALLDATA.find(r=>r.id===id&&r.year===y)||null;
-  const hexA=(h,a)=>{const n=h.replace('#','');return '#'+n+Math.round(a*255).toString(16).padStart(2,'0');};
-  const labels=yrs;
-  const legbase={position:'top',labels:{boxWidth:10,boxHeight:10,usePointStyle:true,padding:multi?9:13,font:{size:multi?9.5:11}}};
+  const hexA=(h,a)=>{const x=h.replace('#','');return '#'+x+Math.round(a*255).toString(16).padStart(2,'0');};
 
-  // ----- รายได้รวม vs กำไรสุทธิ : แท่งกรุ๊ปตามปี (+ เส้นแนวโน้มสมูทเฉพาะบริษัทเดียว) -----
-  const revDS=[];
-  comps.forEach(m=>{
-    const rev=yrs.map(y=>{const r=recOf(m.id,y);return r?r.rev/1e6:null;});
-    const np =yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;});
-    const npPct=yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;});
-    const pre=multi?m.name+' · ':'';
-    revDS.push({type:'bar',label:pre+'รายได้รวม',data:rev,backgroundColor:multi?m.color:'#3B82F6',borderRadius:5,order:3});
-    revDS.push({type:'bar',label:pre+'กำไรสุทธิ',data:np,pct:npPct,backgroundColor:multi?hexA(m.color,.4):'#5EE7C2',borderRadius:5,order:3});
-    if(!multi){   // บริษัทเดียวเท่านั้น → เส้นแนวโน้มรายได้แบบสมูท
-      revDS.push({type:'line',label:'แนวโน้มรายได้',data:rev,borderColor:'#F5B73D',backgroundColor:'transparent',borderWidth:2.6,tension:.4,pointRadius:3.2,pointHoverRadius:5,pointBackgroundColor:'#F5B73D',fill:false,spanGaps:true,order:1});
-    }
-  });
-  if(chRev)chRev.destroy();
-  chRev=new Chart(document.getElementById('chRev'),{type:'bar',
-    data:{labels,datasets:revDS},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');}}}},
-      scales:{y:{ticks:{callback:v=>fmt(v,0)}},x:{ticks:{font:{size:11}}}}}
+  ecPaint('chRev',()=>{
+    const ser=[],fbs=[];
+    comps.forEach(m=>{
+      const rev=yrs.map(y=>{const r=recOf(m.id,y);return r?r.rev/1e6:null;});
+      const np =yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;});
+      const pre=multi?m.name+' · ':'';
+      ser.push({name:pre+'รายได้รวม',type:'bar',data:rev,barMaxWidth:26,itemStyle:{color:multi?m.color:CPAL.blue,borderRadius:[4,4,0,0]}});
+      ser.push({name:pre+'กำไรสุทธิ',type:'bar',data:np,barMaxWidth:26,itemStyle:{color:multi?hexA(m.color,.45):CPAL.mint,borderRadius:[4,4,0,0]}});
+      fbs.push({name:pre+'รายได้รวม',data:rev},{name:pre+'กำไรสุทธิ',data:np});
+      if(!multi)ser.push({name:'แนวโน้มรายได้',type:'line',data:rev,smooth:true,symbolSize:7,z:5,
+        lineStyle:{color:CPAL.amber,width:2.6},itemStyle:{color:CPAL.amber},connectNulls:true});
+    });
+    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),yrs);
+    o.legend.textStyle.fontSize=multi?9.5:11;
+    o.series=ser;
+    o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>tipRow(p.color,p.seriesName,fmt(p.value,0)+' ลบ.')));
+    return {opt:o,fb:fbTable(yrs,fbs,'ลบ.',0)};
   });
 
-  // ----- โครงสร้างต้นทุน (%) : สแต็กต่อบริษัท วางข้างกันในแต่ละปี -----
-  const costDS=[];
-  comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
-    costDS.push({label:pre+'ต้นทุนขาย',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.cogs/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.cogs/1e6:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:4});
-    costDS.push({label:pre+'ค่าใช้จ่ายขาย&บริหาร',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.sga/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.sga/1e6:null;}),backgroundColor:'#F5B73D',stack:st,borderRadius:4});
-    costDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;}),baht:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:4});
-  });
-  if(chCost)chCost.destroy();
-  chCost=new Chart(document.getElementById('chCost'),{type:'bar',
-    data:{labels,datasets:costDS},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const b=c.dataset.baht?c.dataset.baht[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,1)+'%'+(b!=null?' ('+fmt(b,0)+' ลบ.)':'');}}}},
-      scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}}}
+  ecPaint('chCost',()=>{
+    const ser=[],fbs=[],baht=[];
+    const segs=[{nm:'ต้นทุนขาย',c:CPAL.pink,f:r=>r.cogs},{nm:'ค่าใช้จ่ายขาย&บริหาร',c:CPAL.amber,f:r=>r.sga},{nm:'กำไรสุทธิ',c:CPAL.mint,f:r=>r.np}];
+    comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
+      segs.forEach((g,gi)=>{
+        const pct=yrs.map(y=>{const r=recOf(m.id,y);return r&&r.rev?g.f(r)/r.rev*100:null;});
+        baht.push(yrs.map(y=>{const r=recOf(m.id,y);return r?g.f(r)/1e6:null;}));
+        ser.push({name:pre+g.nm,type:'bar',stack:st,data:pct,barMaxWidth:26,
+          itemStyle:{color:g.c,borderRadius:gi===segs.length-1?[4,4,0,0]:0}});
+        fbs.push({name:pre+g.nm,data:pct});
+      });
+    });
+    const o=ecCats(ecBase(),yrs);
+    o.legend.textStyle.fontSize=multi?9.5:11;
+    o.yAxis.max=100; o.yAxis.axisLabel.formatter=v=>v+'%';
+    o.series=ser;
+    o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>{
+      const b=baht[p.seriesIndex]&&baht[p.seriesIndex][p.dataIndex];
+      return tipRow(p.color,p.seriesName,fmt(p.value,1)+'%'+(b!=null&&isFinite(b)?' ('+fmt(b,0)+' ลบ.)':''));}));
+    return {opt:o,fb:fbTable(yrs,fbs,'%',1)};
   });
 
-  // ----- รายได้·รายจ่าย·กำไร : สแต็กต่อบริษัท วางข้างกันในแต่ละปี -----
-  const rplDS=[];
-  comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
-    rplDS.push({label:pre+'รายจ่ายรวม',data:yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/1e6:null;}),pct:yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/r.rev*100:null;}),backgroundColor:'#F2618C',stack:st,borderRadius:{bottomLeft:5,bottomRight:5}});
-    rplDS.push({label:pre+'กำไรสุทธิ',data:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;}),pct:yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/r.rev*100:null;}),backgroundColor:'#5EE7C2',stack:st,borderRadius:{topLeft:5,topRight:5}});
-  });
-  if(chRPL)chRPL.destroy();
-  chRPL=new Chart(document.getElementById('chRPL'),{type:'bar',
-    data:{labels,datasets:rplDS},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:legbase,tooltip:{callbacks:{label:c=>{const p=c.dataset.pct?c.dataset.pct[c.dataIndex]:null;return c.dataset.label+': '+fmt(c.parsed.y,0)+' ลบ.'+(p!=null&&isFinite(p)?' ('+fmt(p,1)+'%)':'');}}}},
-      scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,ticks:{callback:v=>fmt(v,0)},title:{display:true,text:'ล้านบาท',font:{size:10},color:cssv('--tx3')}}}}
+  ecPaint('chRPL',()=>{
+    const ser=[],fbs=[],pcts=[];
+    comps.forEach((m,ci)=>{const st='co'+ci,pre=multi?m.name+' · ':'';
+      const ev=yrs.map(y=>{const r=recOf(m.id,y);return r?(r.exp+r.tax)/1e6:null;});
+      const nv=yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;});
+      pcts.push(yrs.map(y=>{const r=recOf(m.id,y);return r&&r.rev?(r.exp+r.tax)/r.rev*100:null;}));
+      pcts.push(yrs.map(y=>{const r=recOf(m.id,y);return r&&r.rev?r.np/r.rev*100:null;}));
+      ser.push({name:pre+'รายจ่ายรวม',type:'bar',stack:st,data:ev,barMaxWidth:26,itemStyle:{color:CPAL.pink}});
+      ser.push({name:pre+'กำไรสุทธิ',type:'bar',stack:st,data:nv,barMaxWidth:26,itemStyle:{color:CPAL.mint,borderRadius:[4,4,0,0]}});
+      fbs.push({name:pre+'รายจ่ายรวม',data:ev},{name:pre+'กำไรสุทธิ',data:nv});
+    });
+    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),yrs);
+    o.legend.textStyle.fontSize=multi?9.5:11;
+    o.series=ser;
+    o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>{
+      const q=pcts[p.seriesIndex]&&pcts[p.seriesIndex][p.dataIndex];
+      return tipRow(p.color,p.seriesName,fmt(p.value,0)+' ลบ.'+(q!=null&&isFinite(q)?' ('+fmt(q,1)+'%)':''));}));
+    return {opt:o,fb:fbTable(yrs,fbs,'ลบ.',0)};
   });
 }
 /* ===== หัวข้อวิเคราะห์ (เลือกจาก dropdown) — โครงสร้างตามที่นักวิเคราะห์ใช้ ===== */
@@ -1848,8 +1936,11 @@ document.getElementById('ddClearB').onclick=()=>{donutB=null;clearDonut('chFund'
 
 function setDonutInput(searchId,name){const el=document.getElementById(searchId);if(el)el.value=name;}
 function clearDonut(chId,centerId,legId){
-  if(chId==='chAsset'&&chAsset){chAsset.destroy();chAsset=null;}
-  if(chId==='chFund'&&chFund){chFund.destroy();chFund=null;}
+  if(EC[chId]){EC[chId].dispose();delete EC[chId];}
+  delete ECBUILD[chId];
+  const box=document.getElementById(chId);
+  if(box){box.innerHTML='';delete box.dataset.center;}
+  const fb=document.getElementById(chId+'Fb'); if(fb){fb.innerHTML='';fb.hidden=true;}
   document.getElementById(centerId).innerHTML='';
   document.getElementById(legId).innerHTML='';
 }
@@ -1863,8 +1954,22 @@ function legendHTML(el,parts,total){
     <span class="lval"${neg}>${fmt(p.v/1e6,0)}</span>
     <span class="lpct">${isFinite(pct)?fmt(pct,1):'–'}%</span></div>`;}).join('');
 }
-function donutOpts(){return{responsive:true,maintainAspectRatio:false,cutout:'68%',
-  plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.parsed/1e6,0)+' ลบ.'}}}};}
+function donutOpt(parts){
+  return {
+    animationDuration:340,
+    textStyle:{fontFamily:"'IBM Plex Sans Thai',sans-serif"},
+    tooltip:{trigger:'item',confine:true,
+      backgroundColor:cssv('--card'),borderColor:cssv('--line2'),borderWidth:1,
+      textStyle:{color:cssv('--tx'),fontSize:12.5},
+      extraCssText:'border-radius:11px;box-shadow:0 14px 34px '+cssv('--shadow2'),
+      formatter:p=>tipBox(p.name,[tipRow(p.color,'มูลค่า',fmt(p.value/1e6,0)+' ลบ.'),
+                                  tipRow('transparent','สัดส่วน',fmt(p.percent,1)+'%')])},
+    series:[{type:'pie',radius:['62%','92%'],center:['50%','50%'],
+      label:{show:false},labelLine:{show:false},            /* ป้ายกลางวงใช้ HTML ซ้อนแทน ไม่งั้นชื่อยาวโดนตัด */
+      itemStyle:{borderWidth:0},emphasis:{scaleSize:6},
+      data:parts.map(p=>({name:p.label,value:Math.max(0,p.v),itemStyle:{color:p.color}}))}]
+  };
+}
 
 /* วาดโดนัทตามหัวข้อที่เลือก (ใช้ร่วมทั้งสองแผง) */
 function drawStruct(target){
@@ -1877,39 +1982,39 @@ function drawStruct(target){
   setDonutInput(searchId,c.name);
   const S=STRUCTS[ti], parts=S.P(c);
   const tot=parts.reduce((s,p)=>s+p.v,0);
-  const slices=parts.map(p=>Math.max(0,p.v));       // โดนัทไม่รับค่าติดลบ
-  if(isA){if(chAsset)chAsset.destroy();}else{if(chFund)chFund.destroy();}   // ทำลายอันเก่าก่อนสร้างใหม่บน canvas เดิม
-  const ch=new Chart(document.getElementById(chId),{type:'doughnut',
-    data:{labels:parts.map(p=>p.label),datasets:[{data:slices,backgroundColor:parts.map(p=>p.color),borderWidth:0,hoverOffset:6}]},
-    options:donutOpts()});
-  if(isA)chAsset=ch;else chFund=ch;
-  const centerHTML=`<div class="dv">${fmt(tot/1e6,0)}</div><div class="dl">${S.total} (ลบ.)</div>`;
+  const centerHTML='<div class="dv">'+fmt(tot/1e6,0)+'</div><div class="dl">'+S.total+' (ลบ.)</div>';
   document.getElementById(centerId).innerHTML=centerHTML;
-  ch._centerHTML=centerHTML;
+  const box=document.getElementById(chId); if(box)box.dataset.center=centerHTML;   /* modal ขยายเอาไปใช้ต่อ */
   legendHTML(legId,parts,tot);
+  ecPaint(chId,()=>({opt:donutOpt(parts),
+    fb:fbTable(parts.map(p=>p.label),[{name:'ลบ.',data:parts.map(p=>p.v/1e6)}],'ลบ.',0)}));
 }
 function drawAsset(){drawStruct('A');}
 function drawFund(){drawStruct('B');}
 
 /* zoom modal */
-let bigChart;
+/* zoom modal — วาด option เดิมซ้ำในกล่องใหญ่ ไม่ต้องโคลน instance */
+let _zoomId=null;
 const modal=document.getElementById('modal');
-function openZoom(srcChart,title){
-  if(!srcChart)return;
-  document.getElementById('modalTitle').textContent=title;
+function openZoom(id,title){
+  const build=ECBUILD[id]; if(!build)return;
+  _zoomId=id;
+  document.getElementById('modalTitle').textContent=title||'';
   modal.classList.add('show');
-  if(bigChart)bigChart.destroy();
-  const cfg=srcChart.config;
-  bigChart=new Chart(document.getElementById('bigCanvas'),{
-    type:cfg.type,
-    plugins:(cfg.plugins||[]),
-    data:{labels:(srcChart.data.labels||[]).slice(),datasets:srcChart.data.datasets.map(d=>Object.assign({},d))},
-    options:Object.assign({},cfg.options,{maintainAspectRatio:false,responsive:true})
-  });
+  const src=document.getElementById(id), cen=src&&src.dataset?src.dataset.center:'';
   const bc=document.getElementById('bigCenter');
-  if(bc){ if(srcChart._centerHTML){bc.innerHTML=srcChart._centerHTML;bc.style.display='block';} else {bc.innerHTML='';bc.style.display='none';} }
+  if(bc){ if(cen){bc.innerHTML=cen;bc.style.display='block';} else {bc.innerHTML='';bc.style.display='none';} }
+  const box=document.getElementById('bigCanvas'), fb=document.getElementById('bigCanvasFb');
+  ecReady(()=>{ box.hidden=false; fb.hidden=true;
+      const ch=ecMake('bigCanvas'); ch.setOption(build().opt,true);
+      setTimeout(()=>{try{ch.resize();}catch(e){}},40);          /* กล่องเพิ่งโผล่ ขนาดยังไม่นิ่ง */
+    },()=>{ box.hidden=true; fb.hidden=false; fb.innerHTML=build().fb; });
 }
-function closeZoom(){modal.classList.remove('show');if(bigChart){bigChart.destroy();bigChart=null;}}
+function closeZoom(){
+  modal.classList.remove('show'); _zoomId=null;
+  if(EC['bigCanvas']){EC['bigCanvas'].dispose();delete EC['bigCanvas'];}
+  const bc=document.getElementById('bigCenter'); if(bc){bc.innerHTML='';bc.style.display='none';}
+}
 document.getElementById('modalX').onclick=closeZoom;
 document.getElementById('modalBg').onclick=closeZoom;
 
@@ -1958,7 +2063,7 @@ enableDragScroll(document.getElementById('stmtPL'));
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeZoom();closeBlock();}});
 
-function wireZoom(canvasId,getChart,title){
+function wireZoom(canvasId,title){
   const cv=document.getElementById(canvasId);
   const panel=cv.closest('.panel');
   if(!panel)return;
@@ -1967,14 +2072,14 @@ function wireZoom(canvasId,getChart,title){
   (cv.closest('.chartbox')||cv.closest('.donutbox')||panel).appendChild(hint);
   panel.addEventListener('click',e=>{
     if(e.target.closest('.ddz')||e.target.closest('.combo')||e.target.closest('select')||e.target.closest('button')||e.target.closest('.dchip'))return;
-    openZoom(getChart(),typeof title==='function'?title():title);
+    openZoom(canvasId,typeof title==='function'?title():title);
   });
 }
-wireZoom('chRev',()=>chRev,'รายได้รวม vs กำไรสุทธิ');
-wireZoom('chCost',()=>chCost,'โครงสร้างต้นทุน (สัดส่วนรายได้)');
-wireZoom('chRPL',()=>chRPL,'รายได้ · รายจ่าย · กำไร');
-wireZoom('chAsset',()=>chAsset,()=>STRUCTS[structA].name);
-wireZoom('chFund',()=>chFund,()=>STRUCTS[structB].name);
+wireZoom('chRev','รายได้รวม vs กำไรสุทธิ');
+wireZoom('chCost','โครงสร้างต้นทุน (สัดส่วนรายได้)');
+wireZoom('chRPL','รายได้ · รายจ่าย · กำไร');
+wireZoom('chAsset',()=>STRUCTS[structA].name);
+wireZoom('chFund',()=>STRUCTS[structB].name);
 
 /* year selector */
 /* ===== ปี: ชิปคลิกสลับปีที่ดู + ลากหลายปีมาเทียบในตาราง ===== */
