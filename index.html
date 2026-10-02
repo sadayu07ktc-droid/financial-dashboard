@@ -459,6 +459,43 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 .gstip .gt-t b{font-family:'Space Grotesk';font-weight:700;color:var(--acc);font-size:14.5px}
 .gstip .gt-n{font-size:10.5px;color:var(--tx3);margin-top:9px;line-height:1.5}
 
+/* ============ แถบวิ่งข้อมูล (สไตล์ War Room) ============ */
+.ticker{display:flex;align-items:stretch;margin:0 0 18px;border:1px solid var(--line);
+  border-radius:12px;overflow:hidden;background:linear-gradient(90deg,var(--card2),var(--card))}
+.tk-label{display:flex;align-items:center;gap:6px;padding:0 15px;border:0;
+  font:800 11px/1 'Space Grotesk',sans-serif;letter-spacing:.07em;color:#2A1D05;
+  background:linear-gradient(135deg,#F7CB66,#D79A2C);white-space:nowrap;flex-shrink:0;
+  cursor:pointer;user-select:none;transition:filter .15s;font-family:'Space Grotesk',sans-serif}
+.tk-label:hover{filter:brightness(1.07) saturate(1.1)}
+.tk-label:active{filter:brightness(.95)}
+.tk-label:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.tk-date{font:600 9px 'Space Grotesk',sans-serif;opacity:.74;margin-left:2px}
+.tk-swap{margin-left:5px;font-size:12px;font-weight:700;opacity:.85}
+.tk-view{position:relative;overflow:hidden;flex:1;min-width:0}
+.tk-view::before,.tk-view::after{content:"";position:absolute;top:0;bottom:0;width:38px;z-index:2;pointer-events:none}
+.tk-view::before{left:0;background:linear-gradient(90deg,var(--card2),transparent)}
+.tk-view::after{right:0;background:linear-gradient(270deg,var(--card),transparent)}
+.tk-track{display:flex;align-items:center;width:max-content;animation:tkscroll linear infinite}
+.ticker:hover .tk-track,.ticker:focus-within .tk-track{animation-play-state:paused}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.tk-item{display:inline-flex;align-items:center;gap:7px;padding:9px 17px;
+  border-right:1px solid var(--line);white-space:nowrap}
+.tk-code{font-size:12.5px;font-weight:500;color:var(--tx)}
+.tk-val{font:700 13px 'Space Grotesk',sans-serif;color:var(--tx)}
+.tk-u{font-size:9.5px;color:var(--tx3);margin-left:-3px}
+.tk-chg{font:700 11px 'Space Grotesk',sans-serif}
+.tk-chg.up{color:var(--acc)} .tk-chg.down{color:var(--bad)} .tk-chg.flat{color:var(--tx3)}
+.tk-item.tk-sum{background:linear-gradient(90deg,var(--warntint),transparent)}
+.tk-sumlb{font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.03em;color:var(--warn)}
+.tk-sep{display:inline-flex;align-items:center;padding:0 16px;white-space:nowrap;
+  font-size:10.5px;font-weight:600;color:var(--tx3);letter-spacing:.06em}
+/* เคารพการตั้งค่าลดการเคลื่อนไหว — หยุดวิ่งแล้วให้ปัดเองแทน */
+@media(prefers-reduced-motion:reduce){.tk-track{animation:none}.tk-view{overflow-x:auto}}
+@media(max-width:760px){.tk-label{padding:0 11px;font-size:10px;max-width:46%}
+  .tk-date{display:none}                          /* จอแคบ: ตัดวันที่ออก ไม่งั้นป้ายกินที่จนไม่เหลือให้วิ่ง */
+  .tk-item{padding:8px 13px;gap:6px}
+  .tk-view::before,.tk-view::after{width:22px}}
+
 /* ============ กราฟแนวโน้ม (SVG ล้วน ไม่ใช้ lib) ============ */
 .trend{width:100%;min-width:0}
 .tr-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
@@ -556,6 +593,12 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
       <span class="dsrc" id="dataSrc"><span class="d"></span>ข้อมูลในไฟล์</span>
       <button class="thm" id="thmBtn" title="สลับโหมดสว่าง / มืด">🌙</button>
     </div>
+  </div>
+
+  <!-- แถบวิ่ง: 3 รายงานสลับกันเอง · กดป้ายซ้ายเพื่อสลับทันที · ชี้เมาส์เพื่อหยุด -->
+  <div class="ticker" id="ticker" hidden>
+    <button class="tk-label" id="tkLabel" type="button" title="กดเพื่อสลับรายงาน"></button>
+    <div class="tk-view"><div class="tk-track" id="tkTrack"></div></div>
   </div>
 
   <div class="yearbar">
@@ -734,7 +777,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-09-14 · 6';
+const BUILD='2569-10-02 · 7';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1321,6 +1364,103 @@ function renderGrpSum(r,yrs,all){
   box.onclick=()=>{_gtip.classList.remove('show');openTrend();};   /* จิ้มการ์ด = กราฟแนวโน้ม */
   box.style.cursor='pointer';
   box.title='กดเพื่อดูกราฟแนวโน้มรายปี';
+}
+
+/* ============================================================
+   แถบวิ่งข้อมูล (สไตล์ War Room)
+   เนื้อหาถูกทำซ้ำ 2 ชุดแล้วเลื่อน -50% → วนไร้รอยต่อ
+   ครบ 2 รอบสลับรายงานถัดไป · ชี้เมาส์หยุด · กดป้ายสลับทันที
+   ============================================================ */
+const TK_ARROW={up:'▲',down:'▼',flat:'▬'};
+const tkEsc=v=>String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tkDir=d=>(d==null||!isFinite(d))?null:(d>0.05?'up':d<-0.05?'down':'flat');
+function tkYoY(cur,prev){                                  /* % เทียบปีก่อน */
+  if(prev==null||cur==null||!isFinite(prev)||!isFinite(cur)||prev===0)return null;
+  return (cur-prev)/Math.abs(prev)*100;
+}
+function tkChg(dir,txt){return '<span class="tk-chg '+dir+'">'+TK_ARROW[dir]+(txt?' '+txt:'')+'</span>';}
+function tkItem(o){
+  return '<span class="tk-item'+(o.sum?' tk-sum':'')+'">'+(o.lead||'')
+    +(o.code?'<span class="tk-code">'+tkEsc(o.code)+'</span>':'')
+    +'<span class="tk-val">'+o.val+'</span>'
+    +(o.unit?'<span class="tk-u">'+tkEsc(o.unit)+'</span>':'')
+    +(o.dir?tkChg(o.dir,o.chg):'')+'</span>';
+}
+const tkLbl=t=>'<span class="tk-sumlb">'+tkEsc(t)+'</span>';
+const tkSep=t=>'<span class="tk-sep">'+tkEsc(t)+' ▸</span>';
+
+function tkRows(year){return ALLDATA.filter(r=>r.year===year);}
+function tkPrev(year){const p=String(+year-1);return YEARS.includes(p)?p:null;}
+/* รวมยอดทั้งตลาดของปีนั้น */
+function tkMarket(year,f){return tkRows(year).reduce((s,r)=>s+(+f(r)||0),0);}
+
+function tkStreamMoney(key,label,icon,f,unit){            /* รายได้ / กำไร — เรียงมากไปน้อย */
+  const y=curYear; if(!y)return null;
+  const py=tkPrev(y), rows=tkRows(y); if(!rows.length)return null;
+  const prevOf=id=>{const r=py&&ALLDATA.find(x=>x.id===id&&x.year===py);return r?+f(r)/1e6:null;};
+  const tot=tkMarket(y,f)/1e6, ptot=py?tkMarket(py,f)/1e6:null;
+  const d0=tkYoY(tot,ptot);
+  let html=tkItem({sum:1,lead:tkLbl('ตลาดรวม '+label),val:fmt(tot,0),unit:unit,
+    dir:tkDir(d0),chg:d0==null?'':fmt(Math.abs(d0),1)+'%'});
+  const top=[...rows].sort((a,b)=>(+f(b)||0)-(+f(a)||0)).slice(0,20);
+  const det=top.map((r,i)=>{
+    const v=(+f(r)||0)/1e6, d=tkYoY(v,prevOf(r.id));
+    return tkItem({code:(i+1)+'. '+r.name,val:fmt(v,0),unit:unit,
+      dir:tkDir(d),chg:d==null?'':fmt(Math.abs(d),1)+'%'});
+  }).join('');
+  return {key,label:icon+' '+label,date:'ปี '+y+(py?' · เทียบ '+py:''),
+    html:html+tkSep('อันดับ 1-'+top.length)+det,n:top.length+2};
+}
+function tkStreamGroup(){                                  /* เครือสุขสมบูรณ์ */
+  const y=curYear; if(!y)return null;
+  const py=tkPrev(y), c=grpConsolidated(y); if(!c)return null;
+  const pc=py?grpConsolidated(py):null;
+  const dRev=tkYoY(c.rev,pc&&pc.rev), dNp=tkYoY(c.np,pc&&pc.np);
+  let html=tkItem({sum:1,lead:tkLbl('รวมเครือ · รายได้'),val:fmt(c.rev/1e6,0),unit:'ลบ.',
+    dir:tkDir(dRev),chg:dRev==null?'':fmt(Math.abs(dRev),1)+'%'});
+  html+=tkItem({sum:1,lead:tkLbl('กำไรสุทธิ'),val:fmt(c.np/1e6,0),unit:'ลบ.',
+    dir:tkDir(dNp),chg:dNp==null?'':fmt(Math.abs(dNp),1)+'%'});
+  html+=tkItem({sum:1,lead:tkLbl('ROA'),val:fmt(c.np/c.assets*100,1),unit:'%'});
+  const ids=grpIds().map(id=>({id,s:grpShort(id,(ALLDATA.find(x=>x.id===id)||{}).name)}))
+    .sort((a,b)=>{const ia=GRP_ORDER.indexOf(a.s),ib=GRP_ORDER.indexOf(b.s);return (ia<0?99:ia)-(ib<0?99:ib);});
+  const det=ids.map(o=>{
+    const r=ALLDATA.find(x=>x.id===o.id&&x.year===y); if(!r)return '';
+    const p=py&&ALLDATA.find(x=>x.id===o.id&&x.year===py);
+    const d=tkYoY(r.rev,p?p.rev:null);
+    return tkItem({code:o.s,val:fmt(r.rev/1e6,0),unit:'ลบ.',dir:tkDir(d),chg:d==null?'':fmt(Math.abs(d),1)+'%'});
+  }).join('');
+  return {key:'grp',label:'🌴 เครือสุขสมบูรณ์',date:'ปี '+y+(py?' · เทียบ '+py:''),
+    html:html+tkSep('รายบริษัท')+det,n:ids.length+4};
+}
+
+let tkStreams=[],tkActive=0,tkLoops=0,tkWired=false;
+const TK_ROUNDS=2;
+function tkRender(){
+  const box=document.getElementById('ticker'),track=document.getElementById('tkTrack'),lab=document.getElementById('tkLabel');
+  if(!box||!track||!tkStreams.length)return;
+  const st=tkStreams[tkActive],multi=tkStreams.length>1;
+  lab.innerHTML=tkEsc(st.label)+(st.date?'<span class="tk-date"> · '+tkEsc(st.date)+'</span>':'')
+    +(multi?'<span class="tk-swap">⇄</span>':'');
+  track.innerHTML=st.html+st.html;                        /* 2 ชุด = -50% แล้วชุดสองมาแทนพอดี */
+  track.style.animation='none'; void track.offsetWidth; track.style.animation='';  /* รีสตาร์ตให้เริ่มที่ยอดสรุป */
+  track.style.animationDuration=Math.max(30,st.n*3.2)+'s';
+  tkLoops=0; box.hidden=false;
+}
+function tkNext(){if(tkStreams.length<2)return;tkActive=(tkActive+1)%tkStreams.length;tkRender();}
+function buildTicker(){
+  const box=document.getElementById('ticker'),track=document.getElementById('tkTrack'),lab=document.getElementById('tkLabel');
+  if(!box||!track)return;
+  tkStreams=[tkStreamMoney('rev','รายได้รวม','💹',r=>r.rev,'ลบ.'),
+             tkStreamMoney('np','กำไรสุทธิ','💰',r=>r.np,'ลบ.'),
+             tkStreamGroup()].filter(Boolean);
+  if(!tkStreams.length){box.hidden=true;return;}
+  if(tkActive>=tkStreams.length)tkActive=0;
+  tkRender();
+  if(!tkWired){
+    tkWired=true;
+    track.addEventListener('animationiteration',()=>{tkLoops++;if(tkLoops>=TK_ROUNDS)tkNext();});
+    if(lab)lab.addEventListener('click',tkNext);
+  }
 }
 
 /* ============================================================
@@ -2188,7 +2328,7 @@ async function loadSheet(){
     rebuildPool(); doSearch();
     render(); renderRank(); drawAsset(); drawFund();
     renderStmtPickers(); renderStatements();
-    rebuildGroups();
+    rebuildGroups(); buildTicker();
   }catch(e){console.error('Post-load render error:',e);}
 }
 function setYear(){
@@ -2198,6 +2338,7 @@ function setYear(){
   if(donutB&&!FULL.some(c=>c.id===donutB))donutB=FULL[0]?FULL[0].id:null;
   rebuildPool(); doSearch();
   render(); renderRank(); drawAsset(); drawFund();
+  buildTicker();
 }
 
 /* ===== แท็บ + งบการเงิน (งบแสดงฐานะการเงิน / งบกำไรขาดทุน) ต่อบริษัท ทุกปี ===== */
@@ -2356,7 +2497,7 @@ if(window.matchMedia){
   t.onclick=()=>{location.href=location.pathname+'?v='+Date.now();};
 })();
 
-rebuildGroups(); loadGroups();
+rebuildGroups(); loadGroups(); buildTicker();
 if(BOOT_FROM_CACHE) setBadge('cache',_tsTxt(BOOT_FROM_CACHE));   // แสดงที่มาข้อมูลระหว่างรอชีต
 loadSheet();</script>
 </body>
