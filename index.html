@@ -463,12 +463,13 @@ table.stmt tbody tr:hover td.lbl{background:var(--card2)}
 .ticker{display:flex;align-items:stretch;margin:0 0 18px;border:1px solid var(--line);
   border-radius:12px;overflow:hidden;background:linear-gradient(90deg,var(--card2),var(--card))}
 .tk-label{display:flex;align-items:center;gap:6px;padding:0 15px;border:0;
-  font:800 11px/1 'Space Grotesk',sans-serif;letter-spacing:.07em;color:#2A1D05;
-  background:linear-gradient(135deg,#F7CB66,#D79A2C);white-space:nowrap;flex-shrink:0;
+  font:800 11px/1 'Space Grotesk',sans-serif;letter-spacing:.07em;color:var(--onacc);
+  background:linear-gradient(135deg,var(--acc),var(--acc2));   /* ชุดเดียวกับโลโก้หัวหน้า */
+  white-space:nowrap;flex-shrink:0;box-shadow:0 0 18px -6px var(--acc);
   cursor:pointer;user-select:none;transition:filter .15s;font-family:'Space Grotesk',sans-serif}
 .tk-label:hover{filter:brightness(1.07) saturate(1.1)}
 .tk-label:active{filter:brightness(.95)}
-.tk-label:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.tk-label:focus-visible{outline:2px solid var(--onacc);outline-offset:-3px}
 .tk-date{font:600 9px 'Space Grotesk',sans-serif;opacity:.74;margin-left:2px}
 .tk-swap{margin-left:5px;font-size:12px;font-weight:700;opacity:.85}
 .tk-view{position:relative;overflow:hidden;flex:1;min-width:0}
@@ -777,7 +778,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-10-02 · 7';
+const BUILD='2569-10-02 · 8';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
