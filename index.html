@@ -88,6 +88,8 @@ body{
 .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
 .ptitle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--tx2);text-transform:none;margin-bottom:14px;letter-spacing:.2px}
 .ptitle .dot{width:7px;height:7px;border-radius:50%;background:var(--acc)}
+.ptitle .ptnote{font-weight:400;font-size:11.5px;color:var(--tx3);margin-left:2px}
+@media(max-width:760px){.ptitle{flex-wrap:wrap}.ptitle .ptnote{flex-basis:100%;margin-left:15px}}
 
 /* company chips (draggable source) */
 .searchbox{position:relative;margin-bottom:12px}
@@ -694,7 +696,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   </div>
 
   <div class="panel" style="margin-top:20px">
-    <div class="ptitle"><span class="dot"></span>รายได้ · รายจ่าย · กำไร (เทียบรายบริษัท)</div>
+    <div class="ptitle"><span class="dot"></span>รายได้ · รายจ่าย · กำไร<span class="ptnote">แท่ง = รายจ่าย (แกนซ้าย) · เส้น = กำไรสุทธิ (แกนขวา · คนละสเกล)</span></div>
     <div class="chartbox" style="height:300px"><div id="chRPL" class="ecbox"></div><div id="chRPLFb" class="chfb" hidden></div></div>
   </div>
 
@@ -778,7 +780,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 /* ============================================================
    ชุด UI กลาง — ธีม, toast, confirm, loader (vanilla ไม่มี lib)
    ============================================================ */
-const BUILD='2569-10-02 · 8';
+const BUILD='2569-10-02 · 9';
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},
              set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
@@ -1860,8 +1862,25 @@ function ecCats(o,cats){
   return o;
 }
 function ecUnit(o,txt){            /* หน่วยวางแนวตั้งกลางแกน ไม่ไปทับตัวเลขมุมบน */
+  if(window.innerWidth<760)return o;   /* จอแคบไม่มีที่พอ ชื่อแกนจะล้นขอบ */
   o.yAxis.name=txt; o.yAxis.nameLocation='middle'; o.yAxis.nameRotate=90; o.yAxis.nameGap=44;
   o.yAxis.nameTextStyle={color:cssv('--tx3'),fontSize:10};
+  return o;
+}
+/* แกนคู่ — ซ้าย=ยอดใหญ่ ขวา=ยอดเล็กที่ถูกกลบจนมองไม่เห็นถ้าใช้สเกลเดียวกัน */
+function ecDualY(o,leftTxt,rightTxt){
+  const b=o.yAxis;
+  const narrow=window.innerWidth<760;        /* จอแคบไม่มีที่พอให้ชื่อแกน → ย้ายไปอธิบายที่หัวแผงแทน */
+  const mk=(txt,right)=>({
+    type:'value',
+    position:right?'right':'left',
+    name:narrow?'':txt,nameLocation:'middle',nameRotate:right?-90:90,nameGap:right?50:46,
+    nameTextStyle:{color:cssv('--tx3'),fontSize:10},
+    axisLine:{show:false},axisTick:{show:false},
+    splitLine:right?{show:false}:b.splitLine,      /* เส้นกริดใช้ของแกนซ้ายพอ ไม่งั้นซ้อนกันเป็นตาราง */
+    axisLabel:Object.assign({},b.axisLabel)
+  });
+  o.yAxis=[mk(leftTxt,false),mk(rightTxt,true)];
   return o;
 }
 function tipBox(title,rows){
@@ -1931,12 +1950,15 @@ function renderCharts(){
     const expv=cs.map(c=>(c.exp+c.tax)/1e6), npv=cs.map(c=>c.np/1e6);
     const expP=cs.map(c=>c.rev?(c.exp+c.tax)/c.rev*100:null), npP=cs.map(c=>c.rev?c.np/c.rev*100:null);
     const brands=cs.map(c=>coBrands(c.id).join(', '));
-    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),cats);
+    const o=ecCats(ecDualY(ecBase(),'รายจ่าย (ลบ.)','กำไรสุทธิ (ลบ.)'),cats);
     o.series=[
-      {name:'รายจ่ายรวม',type:'bar',stack:'r',data:expv,barMaxWidth:34,itemStyle:{color:CPAL.pink}},
-      {name:'กำไรสุทธิ',type:'bar',stack:'r',data:npv,barMaxWidth:34,itemStyle:{color:CPAL.mint,borderRadius:[5,5,0,0]},
-       label:{show:!!brandActive,position:'top',distance:6,color:CPAL.amber,fontSize:11,fontWeight:600,
-              formatter:p=>brands[p.dataIndex]||''}}];
+      {name:'รายจ่ายรวม',type:'bar',yAxisIndex:0,data:expv,barMaxWidth:34,
+       itemStyle:{color:CPAL.pink,borderRadius:[5,5,0,0]},
+       label:{show:!!brandActive,position:'top',distance:8,color:CPAL.amber,fontSize:11,fontWeight:600,
+              formatter:p=>brands[p.dataIndex]||''}},
+      {name:'กำไรสุทธิ',type:'line',yAxisIndex:1,data:npv,smooth:true,smoothMonotone:'x',z:5,
+       symbol:'circle',symbolSize:6,showSymbol:cats.length<=28,connectNulls:true,
+       lineStyle:{color:CPAL.mint,width:2.6},itemStyle:{color:CPAL.mint}}];
     const pcts=[expP,npP];
     o.tooltip.formatter=ps=>{
       const i=ps[0].dataIndex;
@@ -2005,11 +2027,14 @@ function renderChartsCmp(){
       const nv=yrs.map(y=>{const r=recOf(m.id,y);return r?r.np/1e6:null;});
       pcts.push(yrs.map(y=>{const r=recOf(m.id,y);return r&&r.rev?(r.exp+r.tax)/r.rev*100:null;}));
       pcts.push(yrs.map(y=>{const r=recOf(m.id,y);return r&&r.rev?r.np/r.rev*100:null;}));
-      ser.push({name:pre+'รายจ่ายรวม',type:'bar',stack:st,data:ev,barMaxWidth:26,itemStyle:{color:CPAL.pink}});
-      ser.push({name:pre+'กำไรสุทธิ',type:'bar',stack:st,data:nv,barMaxWidth:26,itemStyle:{color:CPAL.mint,borderRadius:[4,4,0,0]}});
+      ser.push({name:pre+'รายจ่ายรวม',type:'bar',yAxisIndex:0,data:ev,barMaxWidth:26,
+        itemStyle:{color:multi?hexA(m.color,.5):CPAL.pink,borderRadius:[4,4,0,0]}});
+      ser.push({name:pre+'กำไรสุทธิ',type:'line',yAxisIndex:1,data:nv,smooth:true,smoothMonotone:'x',z:5,
+        symbol:'circle',symbolSize:6,connectNulls:true,
+        lineStyle:{color:multi?m.color:CPAL.mint,width:2.6},itemStyle:{color:multi?m.color:CPAL.mint}});
       fbs.push({name:pre+'รายจ่ายรวม',data:ev},{name:pre+'กำไรสุทธิ',data:nv});
     });
-    const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),yrs);
+    const o=ecCats(ecDualY(ecBase(),'รายจ่าย (ลบ.)','กำไรสุทธิ (ลบ.)'),yrs);
     o.legend.textStyle.fontSize=multi?9.5:11;
     o.series=ser;
     o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>{
