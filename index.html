@@ -238,7 +238,7 @@ select.sel:focus{border-color:var(--acc)}
 
 .cols2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
 @media(max-width:760px){.cols2{grid-template-columns:1fr}}
-.chartbox{position:relative;height:240px;margin-top:6px}
+.chartbox{position:relative;height:280px;margin-top:6px}   /* 240 เดิม: ป้ายเอียงกินที่ พื้นที่วาดเหลือครึ่งเดียว */
 .ecbox{width:100%;height:100%}                    /* ECharts อ่านความสูงตอน init ถ้าเป็น 0 กราฟไม่โผล่ */
 .chfb{width:100%;height:100%;overflow:auto}       /* ทางถอยเมื่อโหลดไลบรารีไม่ได้ */
 .chfb table{width:100%;border-collapse:collapse;font-size:12px}
@@ -560,7 +560,7 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   .tabbar{gap:6px;margin-bottom:14px}
   .tab{padding:9px 14px;font-size:12.5px;flex:1;min-width:0;text-align:center}
   .pool{max-height:340px}
-  .chartbox{height:200px}
+  .chartbox{height:260px}                         /* 200 เดิม: ป้ายเอียงกินที่จนพื้นที่วาดเหลือ ~80px */
   .cols2{gap:13px;margin-top:13px}
   .yearbar{padding:12px;gap:10px}
   .yb-col{min-width:0}
@@ -574,6 +574,10 @@ table.tr-tbl tbody tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   table.cmp th,table.cmp td{padding:9px 10px}
   .rkname{width:96px}
   .rkval{width:62px;font-size:12px}
+  /* พื้นที่กดบนมือถือ: ปุ่มธีม 44 · ชิป/ปุ่มรอง ≥40 · ดาวในการ์ดบริษัทขยายพื้นที่กด (ดาวขนาดเท่าเดิม) */
+  .thm{width:44px;height:44px}
+  .qchip,.expbtn,.clr,.rkmore,.yclr{min-height:40px}
+  .chip .star-btn{min-width:40px;min-height:40px;right:2px;display:flex;align-items:center;justify-content:center}
 }
 @media(max-width:420px){
   .quick{gap:5px}
@@ -1860,12 +1864,28 @@ function ecCats(o,cats){
   o.xAxis.axisLabel.rotate=many?42:0;
   o.xAxis.axisLabel.align=many?'right':'center';
   o.xAxis.axisLabel.interval=cats.length>24?'auto':0;
+  /* ป้ายเอียงยาวๆ กินความสูงจนพื้นที่วาดกราฟเหลือนิดเดียว → ตัดชื่อให้สั้น (ชื่อเต็มยังอยู่ใน tooltip) */
+  if(many)o.xAxis.axisLabel.formatter=s=>ecShort(String(s),12);
+  return o;
+}
+/* ตัดข้อความไทยไม่ให้สระบน/ล่าง/วรรณยุกต์หลุดจากพยัญชนะ */
+function ecShort(s,n){
+  if(s.length<=n)return s;
+  let k=n-1;
+  while(k>0&&/[ัิ-ฺ็-๎]/.test(s.charAt(k)))k--;
+  return s.slice(0,k)+'…';
+}
+/* แกน % โครงสร้างต้นทุน: บริษัทรายได้น้อยแต่ขาดทุนหนัก ทำ % ติดลบเป็นหมื่นเท่า ดึงแกนจนแท่งอื่นแบนหมด
+   → ล็อกขอบล่างไว้ที่ −100% (แท่งที่ต่ำกว่าถูกตัดที่ขอบ ค่าจริงยังดูได้ใน tooltip/ตาราง) */
+function ecPctFloor(o){
+  o.yAxis.min=v=>Math.max(Math.floor(v.min/10)*10,-100);
   return o;
 }
 function ecUnit(o,txt){            /* หน่วยวางแนวตั้งกลางแกน ไม่ไปทับตัวเลขมุมบน */
   if(window.innerWidth<760)return o;   /* จอแคบไม่มีที่พอ ชื่อแกนจะล้นขอบ */
-  o.yAxis.name=txt; o.yAxis.nameLocation='middle'; o.yAxis.nameRotate=90; o.yAxis.nameGap=44;
+  o.yAxis.name=txt; o.yAxis.nameLocation='middle'; o.yAxis.nameRotate=90; o.yAxis.nameGap=54;   /* 44 เดิม: ป้ายแกน 11px กว้างขึ้น ชื่อแกนไปทับตัวเลข */
   o.yAxis.nameTextStyle={color:cssv('--tx3'),fontSize:11};
+  o.grid.left=28;                   /* containLabel ไม่นับชื่อแกน → เผื่อที่ไม่ให้ชื่อหลุดขอบซ้าย */
   return o;
 }
 /* แกนคู่ — ซ้าย=ยอดใหญ่ ขวา=ยอดเล็กที่ถูกกลบจนมองไม่เห็นถ้าใช้สเกลเดียวกัน */
@@ -1875,13 +1895,14 @@ function ecDualY(o,leftTxt,rightTxt){
   const mk=(txt,right)=>({
     type:'value',
     position:right?'right':'left',
-    name:narrow?'':txt,nameLocation:'middle',nameRotate:right?-90:90,nameGap:right?50:46,
+    name:narrow?'':txt,nameLocation:'middle',nameRotate:right?-90:90,nameGap:right?48:56,
     nameTextStyle:{color:cssv('--tx3'),fontSize:11},
     axisLine:{show:false},axisTick:{show:false},
     splitLine:right?{show:false}:b.splitLine,      /* เส้นกริดใช้ของแกนซ้ายพอ ไม่งั้นซ้อนกันเป็นตาราง */
     axisLabel:Object.assign({},b.axisLabel)
   });
   o.yAxis=[mk(leftTxt,false),mk(rightTxt,true)];
+  if(!narrow){o.grid.left=28;o.grid.right=34;}   /* เผื่อที่ชื่อแกนทั้งสองข้าง (containLabel ไม่นับชื่อแกน) */
   return o;
 }
 /* เผื่อที่เหนือยอด — แกนที่ max พอดีกับค่าสูงสุด เส้นจะไปแปะขอบบนอ่านยาก
@@ -1947,7 +1968,7 @@ function renderCharts(){
                 {nm:'ค่าใช้จ่ายขาย&บริหาร',c:CPAL.amber,f:c=>c.sga},
                 {nm:'กำไรสุทธิ',c:CPAL.mint,f:c=>c.np}];
     const baht=segs.map(g=>mb(g.f));
-    const o=ecCats(ecBase(),cats);
+    const o=ecPctFloor(ecCats(ecBase(),cats));
     o.yAxis.max=100; o.yAxis.axisLabel.formatter=v=>v+'%';
     o.series=segs.map((g,gi)=>({name:g.nm,type:'bar',stack:'s',data:pc(g.f),barMaxWidth:34,
       itemStyle:{color:g.c,borderRadius:gi===segs.length-1?[4,4,0,0]:0}}));
@@ -2009,7 +2030,7 @@ function renderChartsCmp(){
         lineStyle:{color:CPAL.amber,width:2.6},itemStyle:{color:CPAL.amber},connectNulls:true});
     });
     const o=ecCats(ecUnit(ecBase(),'ล้านบาท'),yrs);
-    o.legend.textStyle.fontSize=multi?9.5:11;
+    o.legend.textStyle.fontSize=multi?11:12;
     o.series=ser;
     o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>tipRow(p.color,p.seriesName,fmt(p.value,0)+' ลบ.')));
     return {opt:o,fb:fbTable(yrs,fbs,'ลบ.',0)};
@@ -2027,8 +2048,8 @@ function renderChartsCmp(){
         fbs.push({name:pre+g.nm,data:pct});
       });
     });
-    const o=ecCats(ecBase(),yrs);
-    o.legend.textStyle.fontSize=multi?9.5:11;
+    const o=ecPctFloor(ecCats(ecBase(),yrs));
+    o.legend.textStyle.fontSize=multi?11:12;
     o.yAxis.max=100; o.yAxis.axisLabel.formatter=v=>v+'%';
     o.series=ser;
     o.tooltip.formatter=ps=>tipBox('ปี '+ps[0].axisValue,ps.map(p=>{
